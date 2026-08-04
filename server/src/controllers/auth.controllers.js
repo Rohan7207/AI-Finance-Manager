@@ -1,4 +1,5 @@
 const userModel = require("../models/user.model");
+const blacklistTokenModel = require("../models/blacklistToken");
 
 async function registerUser(req, res) {
   try {
@@ -82,4 +83,20 @@ async function loginUser(req, res) {
   }
 }
 
-module.exports = { registerUser, loginUser };
+async function getUserProfile(req, res) {
+  return res.status(200).json({ user: req.user });
+}
+
+async function logoutUser(req, res) {
+  await blacklistTokenModel.create({ token: req.token });
+
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  return res.status(200).json({ message: "Logout successful" });
+}
+
+module.exports = { registerUser, loginUser, getUserProfile, logoutUser };
