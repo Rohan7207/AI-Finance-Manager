@@ -44,12 +44,10 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
 // this. does not refer to the user document in arrow function so we use normal async
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
-    return next(); // If  password was'nt modified we continue saving document by calling next(), If you don't call next() (or don't finish the middleware properly), Mongoose waits because it thinks the middleware hasn't finished.
+    return; // If password was'nt modified we continue saving document by returning, If you don't call next() (or don't finish the middleware properly), Mongoose waits because it thinks the middleware hasn't finished.
   }
 
   this.password = await bcrypt.hash(this.password, 10);
-
-  return next();
 });
 
 const userModel = mongoose.model("user", userSchema);
