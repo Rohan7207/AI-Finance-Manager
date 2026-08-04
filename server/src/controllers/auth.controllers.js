@@ -1,5 +1,6 @@
 const userModel = require("../models/user.model");
 const blacklistTokenModel = require("../models/blacklistToken");
+const cookieOptions = require("../utils/cookieOptions");
 
 async function registerUser(req, res) {
   try {
@@ -23,12 +24,7 @@ async function registerUser(req, res) {
 
     const token = user.generateAuthToken();
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, cookieOptions);
 
     return res.status(201).json({
       message: "User registered successfully",
@@ -62,12 +58,7 @@ async function loginUser(req, res) {
 
     const token = user.generateAuthToken();
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, cookieOptions);
 
     return res.status(200).json({
       message: "User login successfull",
@@ -90,11 +81,7 @@ async function getUserProfile(req, res) {
 async function logoutUser(req, res) {
   await blacklistTokenModel.create({ token: req.token });
 
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-  });
+  res.clearCookie("token", cookieOptions);
 
   return res.status(200).json({ message: "Logout successful" });
 }
