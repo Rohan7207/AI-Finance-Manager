@@ -52,12 +52,14 @@ exports.expenseValidator = [
     .isLength({ max: 200 })
     .withMessage("Description must be 200 characters only"),
 
-  body("merchant").optional()
+  body("merchant")
+    .optional()
     .trim()
     .isLength({ max: 100 })
-    .withMessage("Merchant name cannot exceed 100 characters");,
+    .withMessage("Merchant name cannot exceed 100 characters"),
 
-  body("notes").optional()
+  body("notes")
+    .optional()
     .trim()
     .isLength({ max: 500 })
     .withMessage("Notes cannot exceed 500 characters"),
