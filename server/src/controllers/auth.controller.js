@@ -1,5 +1,5 @@
 const userModel = require("../models/user.model");
-const blacklistTokenModel = require("../models/blacklistToken");
+const blacklistTokenModel = require("../models/blacklistToken.model");
 const cookieOptions = require("../utils/cookieOptions");
 
 async function registerUser(req, res) {

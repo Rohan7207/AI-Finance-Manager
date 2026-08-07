@@ -10,7 +10,7 @@ function validateRequest(req, res, next) {
   next();
 }
 
-exports.expenseValidator = [
+exports.expenseValidation = [
   body("amount")
     .notEmpty()
     .withMessage("Amount is requires")
