@@ -17,7 +17,7 @@ async function getExpenses(userId) {
   return expenses;
 }
 
-async function getExpenseById(expenseId, expenseData) {
+async function getExpenseById(expenseId, userId) {
   const expense = await expenseModel.findOne({ _id: expenseId, user: userId });
 
   return expense;
@@ -39,4 +39,19 @@ async function updateExpense(expenseId, updatedData, userId) {
   return updatedExpense;
 }
 
-module.exports = { createExpense, getExpenses, getExpenseById, updateExpense };
+async function deleteExpense(expenseId, userId) {
+  const deletedExpense = await expenseModel.findOneAndDelete({
+    _id: expenseId,
+    user: userId,
+  });
+
+  return deletedExpense;
+}
+
+module.exports = {
+  createExpense,
+  getExpenses,
+  getExpenseById,
+  updateExpense,
+  deleteExpense,
+};

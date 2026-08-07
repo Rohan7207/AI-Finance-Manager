@@ -26,4 +26,10 @@ router.put(
   expenseController.updateExpense,
 );
 
+router.delete(
+  "/:expenseId",
+  authMiddleware.authUser,
+  expenseController.deleteExpense,
+);
+
 module.exports = router;
