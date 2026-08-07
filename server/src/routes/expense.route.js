@@ -13,4 +13,17 @@ router.post(
 
 router.get("/", authMiddleware.authUser, expenseController.getExpenses);
 
+router.get(
+  "/:expenseId",
+  authMiddleware.authUser,
+  expenseController.getExpenseById,
+);
+
+router.put(
+  "/:expenseId",
+  authMiddleware.authUser,
+  expenseValidator.updateExpenseValidator,
+  expenseController.updateExpense,
+);
+
 module.exports = router;

@@ -17,4 +17,26 @@ async function getExpenses(userId) {
   return expenses;
 }
 
-module.exports = { createExpense, getExpenses };
+async function getExpenseById(expenseId, expenseData) {
+  const expense = await expenseModel.findOne({ _id: expenseId, user: userId });
+
+  return expense;
+}
+
+async function updateExpense(expenseId, updatedData, userId) {
+  const updatedExpense = await expenseModel.findOneAndUpdate(
+    {
+      _id: expenseId,
+      user: userId,
+    },
+    updatedData,
+    {
+      new: true, // Return the modified document rather than the original
+      runValidators: true, // Ensure data adheres to schema rules during update
+    },
+  );
+
+  return updatedExpense;
+}
+
+module.exports = { createExpense, getExpenses, getExpenseById, updateExpense };
