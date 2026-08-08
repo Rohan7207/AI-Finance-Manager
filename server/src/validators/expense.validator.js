@@ -13,7 +13,7 @@ function validateRequest(req, res, next) {
 exports.expenseValidation = [
   body("amount")
     .notEmpty()
-    .withMessage("Amount is requires")
+    .withMessage("Amount is required")
     .isFloat({ gt: 0 })
     .withMessage("Amount must be grater than 0")
     .toFloat(),

@@ -4,6 +4,7 @@ const cookieParser = require("cookie-parser");
 const express = require("express");
 const authRoutes = require("./routes/auth.route");
 const expenseRoutes = require("./routes/expense.route");
+const incomeRoutes = require("./routes/income.route");
 
 const app = express();
 app.use(express.json());
@@ -11,5 +12,6 @@ app.use(cookieParser());
 
 app.use("/users", authRoutes);
 app.use("/expenses", expenseRoutes);
+app.use("/incomes", incomeRoutes);
 
 module.exports = app;
