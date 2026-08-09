@@ -2,6 +2,10 @@ const incomeModel = require("../models/income.model");
 const expenseModel = require("../models/expense.model");
 
 async function getDashboardData(userId) {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
   const incomeSum = await incomeModel.aggregate([
     {
       $match: { user: userId },
@@ -11,6 +15,25 @@ async function getDashboardData(userId) {
       $group: {
         _id: null,
         totalIncome: { $sum: "$amount" },
+      },
+    },
+  ]);
+
+  const monthlyIncomeSum = await incomeModel.aggregate([
+    {
+      $match: {
+        user: userId,
+        incomeDate: {
+          $gte: startOfMonth,
+          $lt: startOfNextMonth,
+        },
+      },
+    },
+
+    {
+      $group: {
+        _id: null,
+        monthlyIncome: { $sum: "$amount" },
       },
     },
   ]);
@@ -28,15 +51,43 @@ async function getDashboardData(userId) {
     },
   ]);
 
+  const monthlyExpenseSum = await expenseModel.aggregate([
+    {
+      $match: {
+        user: userId,
+        expenseDate: {
+          $gte: startOfMonth,
+          $lt: startOfNextMonth,
+        },
+      },
+    },
+
+    {
+      $group: {
+        _id: null,
+        monthlyExpense: { $sum: "$amount" },
+      },
+    },
+  ]);
+
   const totalIncome = incomeSum[0]?.totalIncome || 0;
   const totalExpense = expenseSum[0]?.totalExpense || 0;
 
+  const monthlyIncome = monthlyIncomeSum[0]?.monthlyIncome || 0;
+  const monthlyExpense = monthlyExpenseSum[0]?.monthlyExpense || 0;
+
   const balance = totalIncome - totalExpense;
+  const monthlySavings = monthlyIncome - monthlyExpense;
 
   return {
     totalIncome,
     totalExpense,
     balance,
+    monthly: {
+      income: monthlyIncome,
+      expense: monthlyExpense,
+      savings: monthlySavings,
+    },
   };
 }
 

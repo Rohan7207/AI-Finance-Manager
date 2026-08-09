@@ -9,6 +9,7 @@ async function getDashboardData(req, res) {
       totalIncome: data.totalIncome,
       totalExpense: data.totalExpense,
       balance: data.balance,
+      monthly: data.monthly,
     });
   } catch (err) {
     console.error(err);
