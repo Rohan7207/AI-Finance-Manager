@@ -116,6 +116,21 @@ async function getExpenseAnalytics(req, res) {
   }
 }
 
+async function getMonthlyExpenseAnalytics(req, res) {
+  try {
+    const monthlyExpenseTrends =
+      await expenseService.getMonthlyExpenseAnalytics(req.user._id);
+
+    return res.status(200).json({
+      message: "Monthly Expense Analytics retrieved successfully",
+      monthlyExpenseTrends,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 module.exports = {
   addExpense,
   getExpenses,
@@ -123,4 +138,5 @@ module.exports = {
   updateExpense,
   deleteExpense,
   getExpenseAnalytics,
+  getMonthlyExpenseAnalytics,
 };

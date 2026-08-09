@@ -14,6 +14,12 @@ router.post(
 router.get("/", authMiddleware.authUser, expenseController.getExpenses);
 
 router.get(
+  "/analytics/monthly",
+  authMiddleware.authUser,
+  expenseController.getMonthlyExpenseAnalytics,
+);
+
+router.get(
   "/analytics",
   authMiddleware.authUser,
   expenseController.getExpenseAnalytics,

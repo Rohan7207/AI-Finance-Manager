@@ -73,6 +73,55 @@ async function getExpenseAnalytics(userId) {
   return expenseByCategory;
 }
 
+async function getMonthlyExpenseAnalytics(userId) {
+  const monthlyExpenseTrends = await expenseModel.aggregate([
+    {
+      $match: { user: userId },
+    },
+
+    {
+      $group: {
+        _id: {
+          year: { $year: "$expenseDate" },
+          month: { $month: "$expenseDate" },
+        },
+
+        monthlyAnalyticsSum: { $sum: "$amount" },
+      },
+    },
+
+    {
+      $sort: {
+        "_id.year": 1,
+        "_id.month": 1,
+      },
+    },
+  ]);
+
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const formattedData = monthlyExpenseTrends.map((item) => ({
+    year: item._id.year,
+    month: months[item._id.month - 1],
+    totalExpense: item.monthlyAnalyticsSum,
+  }));
+
+  return formattedData;
+}
+
 module.exports = {
   createExpense,
   getExpenses,
@@ -80,4 +129,5 @@ module.exports = {
   updateExpense,
   deleteExpense,
   getExpenseAnalytics,
+  getMonthlyExpenseAnalytics,
 };
