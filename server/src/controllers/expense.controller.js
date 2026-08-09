@@ -100,10 +100,27 @@ async function deleteExpense(req, res) {
   }
 }
 
+async function getExpenseAnalytics(req, res) {
+  try {
+    const categoryExpenses = await expenseService.getExpenseAnalytics(
+      req.user._id,
+    );
+
+    return res.status(200).json({
+      message: "Analytics of expenses received successfully",
+      categoryExpenses,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 module.exports = {
   addExpense,
   getExpenses,
   getExpenseById,
   updateExpense,
   deleteExpense,
+  getExpenseAnalytics,
 };

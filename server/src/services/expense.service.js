@@ -48,10 +48,36 @@ async function deleteExpense(expenseId, userId) {
   return deletedExpense;
 }
 
+async function getExpenseAnalytics(userId) {
+  const expenseByCategory = await expenseModel.aggregate([
+    {
+      $match: {
+        user: userId,
+      },
+    },
+
+    {
+      $group: {
+        _id: "$category",
+        categoryExpenses: { $sum: "$amount" },
+      },
+    },
+
+    {
+      $sort: {
+        categoryExpenses: -1,
+      },
+    },
+  ]);
+
+  return expenseByCategory;
+}
+
 module.exports = {
   createExpense,
   getExpenses,
   getExpenseById,
   updateExpense,
   deleteExpense,
+  getExpenseAnalytics,
 };
