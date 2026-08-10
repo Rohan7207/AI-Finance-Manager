@@ -17,4 +17,19 @@ async function getDashboardData(req, res) {
   }
 }
 
-module.exports = { getDashboardData };
+async function getMonthlyFinancialData(req, res) {
+  try {
+    const monthlyFinancialTrend =
+      await dashboardService.getMonthlyFinancialData(req.user._id);
+
+    return res.status(200).json({
+      message: "Monthly Financial Trend retrieved successfully",
+      monthlyFinancialTrend,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+module.exports = { getDashboardData, getMonthlyFinancialData };

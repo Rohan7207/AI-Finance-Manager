@@ -1,6 +1,9 @@
 const incomeModel = require("../models/income.model");
 const expenseModel = require("../models/expense.model");
 
+const incomeService = require("../services/income.service");
+const expenseService = require("../services/expense.service");
+
 async function getDashboardData(userId) {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -91,4 +94,28 @@ async function getDashboardData(userId) {
   };
 }
 
-module.exports = { getDashboardData };
+async function getMonthlyFinancialData(userId) {
+  const monthlyIncome = await incomeService.getMonthlyIncomeAnalytics(userId);
+
+  const monthlyExpense =
+    await expenseService.getMonthlyExpenseAnalytics(userId);
+
+  const monthlyFinancialTrend = monthlyIncome.map((income) => {
+    const expense = monthlyExpense.find(
+      (expense) =>
+        expense.year === income.year && expense.month === income.month,
+    );
+
+    return {
+      year: income.year,
+      month: income.month,
+      income: income.totalIncome,
+      expense: expense ? expense.totalExpense : 0,
+      savings: income.totalIncome - (expense ? expense.totalExpense : 0),
+    };
+  });
+
+  return monthlyFinancialTrend;
+}
+
+module.exports = { getDashboardData, getMonthlyFinancialData };
