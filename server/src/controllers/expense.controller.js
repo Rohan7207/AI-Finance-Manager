@@ -107,7 +107,7 @@ async function getExpenseAnalytics(req, res) {
     );
 
     return res.status(200).json({
-      message: "Analytics of expenses received successfully",
+      message: "Analytics of expenses retrieved successfully",
       categoryExpenses,
     });
   } catch (err) {

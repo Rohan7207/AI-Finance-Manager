@@ -1,3 +1,4 @@
+const { json } = require("express");
 const incomeModel = require("../models/income.model");
 const incomeService = require("../services/income.service");
 
@@ -102,10 +103,42 @@ async function deleteIncome(req, res) {
   }
 }
 
+async function getIncomeAnalytics(req, res) {
+  try {
+    const sourceIncomes = await incomeService.getIncomeAnalytics(req.user._id);
+
+    return res.status(200).json({
+      message: "Income analytics retrieved successfully",
+      sourceIncomes,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+async function getMonthlyIncomeAnalytics(req, res) {
+  try {
+    const monthlyIncomeTrends = await incomeService.getMonthlyIncomeAnalytics(
+      req.user._id,
+    );
+
+    return res.status(200).json({
+      message: "Monthly Income Analytics retrieved successfully",
+      monthlyIncomeTrends,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 module.exports = {
   createIncome,
   getIncomes,
   getIncomeById,
   updateIncome,
   deleteIncome,
+  getIncomeAnalytics,
+  getMonthlyIncomeAnalytics,
 };

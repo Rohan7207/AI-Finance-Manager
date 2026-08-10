@@ -14,6 +14,18 @@ router.post(
 router.get("/", authMiddleware.authUser, incomeController.getIncomes);
 
 router.get(
+  "/analytics/monthly",
+  authMiddleware.authUser,
+  incomeController.getMonthlyIncomeAnalytics,
+);
+
+router.get(
+  "/analytics",
+  authMiddleware.authUser,
+  incomeController.getIncomeAnalytics,
+);
+
+router.get(
   "/:incomeId",
   authMiddleware.authUser,
   incomeController.getIncomeById,
