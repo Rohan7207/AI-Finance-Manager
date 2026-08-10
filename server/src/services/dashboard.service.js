@@ -100,19 +100,57 @@ async function getMonthlyFinancialData(userId) {
   const monthlyExpense =
     await expenseService.getMonthlyExpenseAnalytics(userId);
 
-  const monthlyFinancialTrend = monthlyIncome.map((income) => {
-    const expense = monthlyExpense.find(
-      (expense) =>
-        expense.year === income.year && expense.month === income.month,
+  const months = [
+    ...monthlyIncome.map((item) => `${item.year}-${item.month}`),
+    ...monthlyExpense.map((item) => `${item.year}-${item.month}`),
+  ];
+
+  const uniqueMonths = [...new Set(months)];
+
+  const monthlyFinancialTrend = uniqueMonths.map((monthKey) => {
+    const [year, month] = monthKey.split("-");
+
+    const income = monthlyIncome.find(
+      (item) => item.year === Number(year) && item.month === month,
     );
 
+    const expense = monthlyExpense.find(
+      (item) => item.year === Number(year) && item.month === month,
+    );
+
+    const incomeAmount = income ? income.totalIncome : 0;
+    const expenseAmount = expense ? expense.totalExpense : 0;
+
     return {
-      year: income.year,
-      month: income.month,
-      income: income.totalIncome,
-      expense: expense ? expense.totalExpense : 0,
-      savings: income.totalIncome - (expense ? expense.totalExpense : 0),
+      year: Number(year),
+      month,
+      income: incomeAmount,
+      expense: expenseAmount,
+      savings: incomeAmount - expenseAmount,
     };
+  });
+
+  const monthOrder = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  monthlyFinancialTrend.sort((a, b) => {
+    if (a.year !== b.year) {
+      return a.year - b.year;
+    }
+
+    return monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month);
   });
 
   return monthlyFinancialTrend;
