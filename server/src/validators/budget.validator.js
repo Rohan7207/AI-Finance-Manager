@@ -18,19 +18,24 @@ const budgetValidator = [
     .withMessage("Amount must be greater than 0")
     .toFloat(),
 
-  body("month")
+  body("startDate")
     .notEmpty()
-    .withMessage("Month is required")
-    .isNumeric()
-    .withMessage("Month must be a number")
-    .isInt({ min: 1, max: 12 })
-    .withMessage("Month must be between 1 to 12"),
+    .withMessage("Start Date is required")
+    .isISO8601()
+    .withMessage("Invalid date format"),
 
-  body("year")
+  body("endDate")
     .notEmpty()
-    .withMessage("Year must be required")
-    .isInt({ min: 1900, max: 2100 })
-    .withMessage("Year must be between 1900 and 2100"),
+    .withMessage("End Date is required")
+    .isISO8601()
+    .withMessage("Invalid date format")
+    .custom((endDate, { req }) => {
+      if (new Date(endDate) <= new Date(req.body.startDate)) {
+        throw new Error("End Date must be after Start Date");
+      }
+
+      return true;
+    }),
 
   validateRequest,
 ];
@@ -38,27 +43,13 @@ const budgetValidator = [
 const updateBudgetValidator = [
   body("amount")
     .optional()
-    .notEmpty()
-    .withMessage("Amount is required")
     .isFloat({ gt: 0 })
     .withMessage("Amount must be greater than 0")
     .toFloat(),
 
-  body("month")
-    .optional()
-    .notEmpty()
-    .withMessage("Month is required")
-    .isNumeric()
-    .withMessage("Month must be a number")
-    .isInt({ min: 1, max: 12 })
-    .withMessage("Month must be between 1 to 12"),
+  body("startDate").optional().isISO8601().withMessage("Invalid date format"),
 
-  body("year")
-    .optional()
-    .notEmpty()
-    .withMessage("Year must be required")
-    .isInt({ min: 1900, max: 2100 })
-    .withMessage("Year must be between 1900 and 2100"),
+  body("endDate").optional().isISO8601().withMessage("Invalid date format"),
 
   validateRequest,
 ];

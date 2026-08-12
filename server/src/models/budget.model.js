@@ -14,15 +14,13 @@ const budgetSchema = new mongoose.Schema(
       min: 1,
     },
 
-    month: {
-      type: Number,
+    startDate: {
+      type: Date,
       required: true,
-      min: 1,
-      max: 12,
     },
 
-    year: {
-      type: Number,
+    endDate: {
+      type: Date,
       required: true,
     },
 
@@ -34,18 +32,6 @@ const budgetSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  },
-);
-
-// Ensures one budget per user per month/year.
-budgetSchema.index(
-  {
-    user: 1,
-    month: 1,
-    year: 1,
-  },
-  {
-    unique: true,
   },
 );
 

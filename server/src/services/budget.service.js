@@ -1,4 +1,5 @@
 const budgetModel = require("../models/budget.model");
+const expenseModel = require("../models/expense.model");
 
 async function createBudget(budgetData, userId) {
   const budget = new budgetModel({
@@ -27,6 +28,22 @@ async function getBudgetById(budgetId, userId) {
 }
 
 async function updateBudget(budgetData, budgetId, userId) {
+  const budget = await budgetModel.findOne({
+    _id: budgetId,
+    user: userId,
+  });
+
+  if (!budget) {
+    throw new Error("Budget not found");
+  }
+
+  const startDate = budgetData.startDate || budget.startDate;
+  const endDate = budgetData.endDate || budget.endDate;
+
+  if (new Date(endDate) <= new Date(startDate)) {
+    throw new Error("End Date must be after Start Date");
+  }
+
   const updatedBudget = await budgetModel.findOneAndUpdate(
     {
       _id: budgetId,
@@ -51,10 +68,56 @@ async function deleteBudget(budgetId, userId) {
   return deletedBudget;
 }
 
+// Connect the budget with the user's actual expenses for that month budget
+async function getBudgetAnalytics(budgetId, userId) {
+  const budget = await budgetModel.findOne({
+    _id: budgetId,
+    user: userId,
+  });
+
+  if (!budget) {
+    throw new Error("Budget not found");
+  }
+
+  const startDate = new Date(budget.year, budget.month - 1, 1);
+  const endDate = new Date(budget.year, budget.month, 1);
+
+  const analytics = await expenseModel.aggregate([
+    {
+      $match: {
+        user: userId,
+        expenseDate: {
+          $gte: startDate,
+          $lt: endDate,
+        },
+      },
+    },
+
+    {
+      group: {
+        _id: null,
+        totalExpensesSum: { $sum: "$amount" },
+      },
+    },
+  ]);
+
+  const totalExpensesSum = analytics[0]?.totalExpensesSum || 0;
+  const remaining = budget.amount - totalExpensesSum;
+  const percentageUsed = (totalExpensesSum / budget.amount) * 100;
+
+  return {
+    budget: budget.amount,
+    spent: totalExpensesSum,
+    remaining,
+    percentageUsed,
+  };
+}
+
 module.exports = {
   createBudget,
   getBudgets,
   getBudgetById,
   updateBudget,
   deleteBudget,
+  getBudgetAnalytics,
 };

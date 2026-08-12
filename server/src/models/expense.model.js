@@ -79,6 +79,11 @@ const expenseSchema = new mongoose.Schema(
   },
 );
 
+expenseSchema.index({
+  user: 1,
+  expenseDate: 1,
+});
+
 const expenseModel = mongoose.model("Expense", expenseSchema);
 
 module.exports = expenseModel;

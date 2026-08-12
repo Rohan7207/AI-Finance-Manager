@@ -11,12 +11,6 @@ async function createBudget(req, res) {
   } catch (err) {
     console.error(err);
 
-    if (err.code === 11000) {
-      return res.status(409).json({
-        message: "Budget already exists for this month and year",
-      });
-    }
-
     return res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -24,6 +18,14 @@ async function createBudget(req, res) {
 async function getBudgets(req, res) {
   try {
     const budgets = await budgetService.getBudgets(req.user._id);
+
+    if (budgets.length === 0) {
+      return res.status(200).json({
+        message:
+          "No budgets found. Add your first budget to start tracking your spending.",
+        budgets: [],
+      });
+    }
 
     return res.status(200).json({
       message: "Budgets retrieved successfully",
@@ -82,10 +84,9 @@ async function updateBudget(req, res) {
     });
   } catch (err) {
     console.error(err);
-
-    if (err.code === 11000) {
-      return res.status(409).json({
-        message: "Budget already exists for this month and year",
+    if (err.message === "End Date must be after Start Date") {
+      return res.status(400).json({
+        message: err.message,
       });
     }
 
@@ -113,6 +114,8 @@ async function deleteBudget(req, res) {
     return res.status(500).json({ message: "Internal server error" });
   }
 }
+
+async function getBudgetAnalytics(req, res) {}
 
 module.exports = {
   createBudget,
