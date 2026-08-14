@@ -79,8 +79,19 @@ async function getBudgetAnalytics(budgetId, userId) {
     throw new Error("Budget not found");
   }
 
-  const startDate = new Date(budget.year, budget.month - 1, 1);
-  const endDate = new Date(budget.year, budget.month, 1);
+  const now = new Date();
+
+  if (now < budget.startDate) {
+    return {
+      budget: budget.amount,
+      spent: 0,
+      remaining: budget.amount,
+      percentageUsed: 0,
+    };
+  }
+
+  const startDate = budget.startDate;
+  const endDate = budget.endDate < now ? budget.endDate : now;
 
   const analytics = await expenseModel.aggregate([
     {
@@ -94,7 +105,7 @@ async function getBudgetAnalytics(budgetId, userId) {
     },
 
     {
-      group: {
+      $group: {
         _id: null,
         totalExpensesSum: { $sum: "$amount" },
       },

@@ -15,6 +15,12 @@ router.post(
 router.get("/", authMiddleware.authUser, budgetController.getBudgets);
 
 router.get(
+  "/:budgetId/analytics",
+  authMiddleware.authUser,
+  budgetController.getBudgetAnalytics,
+);
+
+router.get(
   "/:budgetId",
   authMiddleware.authUser,
   budgetController.getBudgetById,

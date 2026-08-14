@@ -115,7 +115,29 @@ async function deleteBudget(req, res) {
   }
 }
 
-async function getBudgetAnalytics(req, res) {}
+async function getBudgetAnalytics(req, res) {
+  try {
+    const analytics = await budgetService.getBudgetAnalytics(
+      req.params.budgetId,
+      req.user._id,
+    );
+
+    return res.status(200).json({
+      message: "Budget analytics retrieved successfully",
+      analytics,
+    });
+  } catch (err) {
+    console.error(err);
+
+    if (err.message === "Budget not found") {
+      return res.status(404).json({
+        message: err.message,
+      });
+    }
+
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
 
 module.exports = {
   createBudget,
@@ -123,4 +145,5 @@ module.exports = {
   getBudgetById,
   updateBudget,
   deleteBudget,
+  getBudgetAnalytics,
 };
