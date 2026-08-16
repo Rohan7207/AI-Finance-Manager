@@ -124,6 +124,17 @@ async function getBudgetAnalytics(budgetId, userId) {
   };
 }
 
+// Get all the active budgets for current day
+async function getActiveBudgets(userId) {
+  const today = new Date();
+
+  return await budgetModel.find({
+    user: userId,
+    startDate: { $lte: today },
+    endDate: { $gte: today },
+  });
+}
+
 module.exports = {
   createBudget,
   getBudgets,
@@ -131,4 +142,5 @@ module.exports = {
   updateBudget,
   deleteBudget,
   getBudgetAnalytics,
+  getActiveBudgets,
 };

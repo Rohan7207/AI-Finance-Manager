@@ -3,6 +3,7 @@ const expenseModel = require("../models/expense.model");
 
 const incomeService = require("../services/income.service");
 const expenseService = require("../services/expense.service");
+const budgetService = require("../services/budget.service");
 
 async function getDashboardData(userId) {
   const now = new Date();
@@ -156,4 +157,44 @@ async function getMonthlyFinancialData(userId) {
   return monthlyFinancialTrend;
 }
 
-module.exports = { getDashboardData, getMonthlyFinancialData };
+async function getFinancialContext(userId) {
+  const dashboardData = await getDashboardData(userId);
+  const expenseCategoryData = await expenseService.getExpenseAnalytics(userId);
+  const monthlyFinancialTrend = await getMonthlyFinancialData(userId);
+  const activeBudgets = await budgetService.getActiveBudgets(userId);
+
+  const monthlyIncomeSum = dashboardData.monthlyIncomeSum;
+  const monthlyExpenseSum = dashboardData.monthlyExpenseSum;
+
+  const monthlyIncome = monthlyIncomeSum[0]?.monthlyIncome || 0;
+  const monthlyExpense = monthlyExpenseSum[0]?.monthlyExpense || 0;
+
+  const monthlySavings = monthlyIncome - monthlyExpense;
+
+  const budgetAnalytics = await Promise.all(
+    activeBudgets.map((budget) =>
+      budgetService.getBudgetAnalytics(budget._id, userId),
+    ),
+  );
+
+  const recentMonthlyTrend = monthlyFinancialTrend.slice(-6);
+
+  return {
+    currentMonth: {
+      income: monthlyIncome,
+      expenses: monthlyExpense,
+      savings: monthlySavings,
+      topExpenseCategory: expenseCategoryData[0] || null,
+    },
+
+    historicalTrend: recentMonthlyTrend,
+
+    budgets: budgetAnalytics,
+  };
+}
+
+module.exports = {
+  getDashboardData,
+  getMonthlyFinancialData,
+  getFinancialContext,
+};
