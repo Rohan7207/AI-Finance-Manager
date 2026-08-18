@@ -1,10 +1,37 @@
-import React from "react";
+import React, { useState } from "react";
+import api from "../api";
 
 const Register = () => {
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+
+    const userData = {
+      username,
+      email,
+      password,
+    };
+
+    try {
+      const response = await api.post("/users/register", userData);
+
+      console.log("Registration successful:", response.data);
+
+      const profileResponse = await api.get("/users/profile");
+
+      console.log("Authenticated user:", profileResponse.data);
+    } catch (err) {
+      console.log("Registration failed:", err.response?.data || err.message);
+    }
+  }
+
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-slate-50">
+    <div className="min-h-screen overflow-hidden grid grid-cols-1 lg:grid-cols-2 bg-slate-50">
       {/* Left Section */}
-      <div className="flex flex-col justify-start px-8 py-10 lg:justify-center lg:px-16 lg:py-0">
+      <div className="hidden lg:flex flex-col justify-start px-8 py-10 lg:justify-center lg:px-16 lg:py-0">
         <div className="max-w-lg">
           <p className="text-sm font-semibold tracking-wide text-emerald-600 uppercase">
             AI Finance Manager
@@ -22,7 +49,7 @@ const Register = () => {
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center justify-center px-6 py-12 lg:px-8">
+      <div className="h-screen flex items-center justify-center px-6 py-12 lg:px-8">
         <div className="w-full max-w-md">
           <h2 className="text-3xl font-bold tracking-tight text-slate-900">
             Create your account
@@ -32,12 +59,16 @@ const Register = () => {
             Start managing your finances today.
           </p>
 
-          <form className="mt-8 space-y-5">
+          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
             <div>
               <label className="block mb-2 text-sm font-medium text-slate-700">
                 Name
               </label>
               <input
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                }}
                 className="w-full border rounded-lg border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                 type="text"
                 placeholder="Enter your name"
@@ -49,6 +80,10 @@ const Register = () => {
                 Email
               </label>
               <input
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                }}
                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                 type="email"
                 placeholder="Enter your email"
@@ -60,6 +95,10 @@ const Register = () => {
                 Password
               </label>
               <input
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                }}
                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                 type="password"
                 placeholder="Enter your password"

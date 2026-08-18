@@ -7,10 +7,17 @@ const expenseRoutes = require("./routes/expense.route");
 const incomeRoutes = require("./routes/income.route");
 const dashboardRoutes = require("./routes/dashboard.route");
 const budgetRoutes = require("./routes/budget.route");
+const cors = require("cors");
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
 
 app.use("/users", authRoutes);
 app.use("/expenses", expenseRoutes);
