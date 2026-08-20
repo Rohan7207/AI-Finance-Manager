@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import api from "../api";
+import { useNavigate } from "react-router-dom";
 
 const Register = () => {
+  const navigate = useNavigate();
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -9,22 +12,27 @@ const Register = () => {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    const userData = {
-      username,
-      email,
-      password,
-    };
+    if (!username.trim() || !email.trim() || !password.trim()) {
+      alert("Please fill all fields");
+      return;
+    }
 
     try {
+      const userData = {
+        username,
+        email,
+        password,
+      };
+
       const response = await api.post("/users/register", userData);
 
       console.log("Registration successful:", response.data);
-
-      const profileResponse = await api.get("/users/profile");
-
-      console.log("Authenticated user:", profileResponse.data);
+      navigate("/dashboard");
     } catch (err) {
       console.log("Registration failed:", err.response?.data || err.message);
+      alert(
+        err.response?.data?.message || "Registration failed. Please try again.",
+      );
     }
   }
 
