@@ -38,3 +38,25 @@ exports.loginValidator = [
 
   validateRequest,
 ];
+
+exports.forgotPasswordValidator = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Please enter a valid email"),
+
+  validateRequest,
+];
+
+exports.resetPasswordValidator = [
+  body("token").trim().notEmpty().withMessage("Token is required"),
+
+  body("password")
+    .trim()
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters long"),
+
+  validateRequest,
+];

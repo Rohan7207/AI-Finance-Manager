@@ -13,7 +13,7 @@ const Register = () => {
     e.preventDefault();
 
     if (!username.trim() || !email.trim() || !password.trim()) {
-      alert("Please fill all fields");
+      console.log("Please fill all fields");
       return;
     }
 
@@ -30,9 +30,6 @@ const Register = () => {
       navigate("/dashboard");
     } catch (err) {
       console.log("Registration failed:", err.response?.data || err.message);
-      alert(
-        err.response?.data?.message || "Registration failed. Please try again.",
-      );
     }
   }
 

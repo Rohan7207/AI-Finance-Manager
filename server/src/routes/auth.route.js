@@ -13,6 +13,18 @@ router.post(
 
 router.post("/login", authValidator.loginValidator, authController.loginUser);
 
+router.post(
+  "/forgot-password",
+  authValidator.forgotPasswordValidator,
+  authController.forgotPassword,
+);
+
+router.post(
+  "/reset-password",
+  authValidator.resetPasswordValidator,
+  authController.resetPassword,
+);
+
 router.get("/profile", authMiddleware.authUser, authController.getUserProfile);
 
 router.post("/logout", authMiddleware.authUser, authController.logoutUser);
