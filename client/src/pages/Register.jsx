@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import api from "../api";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -9,27 +9,57 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [registerMessage, setRegisterMessage] = useState("");
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [registerSuccess, setRegisterSuccess] = useState(false);
+
   async function handleSubmit(e) {
     e.preventDefault();
 
+    setRegisterMessage("");
+    setRegisterSuccess(false);
+
     if (!username.trim() || !email.trim() || !password.trim()) {
-      console.log("Please fill all fields");
+      setRegisterMessage("Please fill in all fields");
       return;
     }
 
     try {
-      const userData = {
+      setRegisterLoading(true);
+
+      const response = await api.post("/users/register", {
         username,
         email,
         password,
-      };
+      });
 
-      const response = await api.post("/users/register", userData);
+      setRegisterSuccess(true);
+      setRegisterMessage("Account created successfully.");
 
-      console.log("Registration successful:", response.data);
-      navigate("/dashboard");
+      setUsername("");
+      setEmail("");
+      setPassword("");
+
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
     } catch (err) {
-      console.log("Registration failed:", err.response?.data || err.message);
+      if (err.code === "ECONNABORTED") {
+        setRegisterMessage(
+          "The request took too long. Please check your internet connection and try again.",
+        );
+      } else if (!err.response) {
+        setRegisterMessage(
+          "Unable to connect to the server. Please check your internet connection and try again.",
+        );
+      } else {
+        setRegisterMessage(
+          err.response.data?.message ||
+            "Something went wrong. Please try again.",
+        );
+      }
+    } finally {
+      setRegisterLoading(false);
     }
   }
 
@@ -110,19 +140,33 @@ const Register = () => {
               />
             </div>
 
+            {registerMessage && (
+              <p
+                className={`text-sm ${
+                  registerSuccess ? "text-emerald-600" : "text-red-500"
+                }`}
+              >
+                {registerMessage}
+              </p>
+            )}
+
             <button
-              className="w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+              className="w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
               type="submit"
+              disabled={registerLoading}
             >
-              Create account
+              {registerLoading ? "Creating account..." : "Create account"}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-slate-500">
             Already have an account?{" "}
-            <span className="font-semibold text-emerald-600 cursor-pointer hover:text-emerald-700">
+            <Link
+              to="/login"
+              className="font-semibold text-emerald-600 hover:text-emerald-700"
+            >
               Sign in
-            </span>
+            </Link>
           </p>
         </div>
       </div>

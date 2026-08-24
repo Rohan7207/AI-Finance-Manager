@@ -9,6 +9,8 @@ const Login = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loginMessage, setLoginMessage] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
 
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -38,9 +40,21 @@ const Login = () => {
       setForgotSuccess(true);
     } catch (err) {
       setForgotSuccess(false);
-      setForgotMessage(
-        err.response?.data?.message || "Something went wrong. Please try again",
-      );
+
+      if (err.code === "ECONNABORTED") {
+        setForgotMessage(
+          "The request took too long. Please check your internet connection and try again.",
+        );
+      } else if (!err.response) {
+        setForgotMessage(
+          "Unable to connect to the server. Please check your internet connection and try again.",
+        );
+      } else {
+        setForgotMessage(
+          err.response.data?.message ||
+            "Something went wrong. Please try again.",
+        );
+      }
     } finally {
       setForgotLoading(false);
     }
@@ -51,25 +65,41 @@ const Login = () => {
   async function handleSubmit(e) {
     e.preventDefault();
 
+    setLoginMessage("");
+
     if (!email.trim() || !password.trim()) {
-      console.log("Please fill all fields");
+      setLoginMessage("Please fill in all fields.");
       return;
     }
 
     try {
-      const userData = {
+      setLoginLoading(true);
+
+      const response = await api.post("/users/login", {
         email,
         password,
-      };
+      });
 
-      const response = await api.post("/users/login", userData);
-
-      console.log("Login successful:", response.data);
       setUser(response.data.user);
 
       navigate("/dashboard");
     } catch (err) {
-      console.log("Login failed:", err.response?.data || err.message);
+      if (err.code === "ECONNABORTED") {
+        setLoginMessage(
+          "The request took too long. Please check your internet connection and try again.",
+        );
+      } else if (!err.response) {
+        setLoginMessage(
+          "Unable to connect to the server. Please check your internet connection and try again.",
+        );
+      } else {
+        setLoginMessage(
+          err.response.data?.message ||
+            "Something went wrong. Please try again.",
+        );
+      }
+    } finally {
+      setLoginLoading(false);
     }
   }
 
@@ -136,6 +166,10 @@ const Login = () => {
                 />
               </div>
 
+              {loginMessage && (
+                <p className="text-sm text-red-500">{loginMessage}</p>
+              )}
+
               <div className="flex justify-end">
                 <button
                   type="button"
@@ -149,18 +183,22 @@ const Login = () => {
               </div>
 
               <button
-                className="w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                className="w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                 type="submit"
+                disabled={loginLoading}
               >
-                Sign in
+                {loginLoading ? "Signing in..." : "Sign in"}
               </button>
             </form>
 
             <p className="mt-6 text-center text-sm text-slate-500">
               Don't have an account?{" "}
-              <span className="font-semibold text-emerald-600 cursor-pointer hover:text-emerald-700">
+              <Link
+                to="/register"
+                className="font-semibold text-emerald-600 hover:text-emerald-700"
+              >
                 Create one
-              </span>
+              </Link>
             </p>
           </div>
         </div>

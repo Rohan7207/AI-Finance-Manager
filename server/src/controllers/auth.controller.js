@@ -122,8 +122,6 @@ async function forgotPassword(req, res) {
 
     const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
 
-    console.log("Reset URL:", resetUrl);
-
     await sendPasswordResetEmail(email, resetUrl);
 
     return res.status(200).json({
@@ -163,7 +161,7 @@ async function resetPassword(req, res) {
 
     if (!user) {
       return res.status(400).json({
-        message: "Invalid pr expired reset token",
+        message: "Invalid or expired reset token",
       });
     }
 
