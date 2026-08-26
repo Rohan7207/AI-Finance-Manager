@@ -8,12 +8,15 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ResetPassword from "./pages/ResetPassword";
 import PublicRoute from "./components/PublicRoute";
 import NotFound from "./pages/NotFound";
+import Landing from "./pages/Landing";
 
 const App = () => {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          <Route path="/" element={<Landing />} />
+
           <Route path="*" element={<NotFound />} />
           <Route
             path="/register"

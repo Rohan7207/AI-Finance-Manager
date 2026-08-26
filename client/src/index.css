@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+/* Hide browser's built-in password reveal controls */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none;
+}
+
+input[type="password"]::-webkit-credentials-auto-fill-button {
+    display: none;
+}
+
+input[type="password"]::-webkit-textfield-decoration-container {
+    display: none;
+}
