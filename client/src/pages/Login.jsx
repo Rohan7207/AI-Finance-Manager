@@ -127,7 +127,7 @@ const Login = () => {
                   Your financial workspace
                 </p>
 
-                <h1 className="mt-4 text-5xl font-bold leading-[1.08] tracking-tight text-slate-900 xl:text-6xl">
+                <h1 className="mt-4 text-4xl font-bold leading-[1.08] tracking-tight text-slate-900 xl:text-6xl">
                   Welcome back.
                   <span className="block text-emerald-600">
                     Your money is waiting.
@@ -259,7 +259,7 @@ const Login = () => {
                 </form>
 
                 {/* Register */}
-                <p className="mt-7 text-center text-sm text-slate-500">
+                <p className="mt-5 text-center text-sm text-slate-500">
                   Don't have an account?{" "}
                   <Link
                     to="/register"
@@ -278,28 +278,30 @@ const Login = () => {
         </div>
 
         {/* ================= MOBILE ================= */}
-        <div className="flex min-h-screen flex-col px-5 py-6 lg:hidden">
-          {/* Mobile Brand */}
-          <div className="relative z-10 max-w-xl">
+        <div className="flex min-h-screen flex-col bg-slate-50 px-5 py-6 lg:hidden">
+          {/* Top Brand */}
+          <div>
             <Link to="/" className="flex items-center gap-2.5">
               <FinanceLogo />
             </Link>
           </div>
 
-          {/* Mobile Content */}
-          <div className="flex flex-1 items-center justify-center">
+          {/* Main Content */}
+          <div className="flex flex-1 mt-8 items-start justify-center">
             <div className="w-full max-w-sm">
-              <div className="text-center">
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+              {/* Welcome */}
+              <div>
+                <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
                   Welcome back
                 </h1>
 
-                <p className="mt-2 text-sm text-slate-500">
-                  Continue managing your finances.
+                <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-slate-500">
+                  Let's pick up where you left off.
                 </p>
               </div>
 
-              <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+              {/* Login Form */}
+              <form className="mt-7 space-y-5" onSubmit={handleSubmit}>
                 {/* Email */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-700">
@@ -319,11 +321,9 @@ const Login = () => {
 
                 {/* Password */}
                 <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label className="text-sm font-medium text-slate-700">
-                      Password
-                    </label>
-                  </div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    Password
+                  </label>
 
                   <div className="relative">
                     <input
@@ -341,12 +341,13 @@ const Login = () => {
                       onClick={() => {
                         setShowPassword(!showPassword);
                       }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-medium text-slate-400"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-medium text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
                     >
                       {showPassword ? "Hide" : "Show"}
                     </button>
                   </div>
 
+                  {/* Forgot Password */}
                   <div className="mt-2 flex justify-end">
                     <button
                       type="button"
@@ -368,9 +369,9 @@ const Login = () => {
                   </div>
                 )}
 
-                {/* Submit */}
+                {/* Sign In */}
                 <button
-                  className="w-full rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-semibold text-white shadow-sm transition active:scale-[0.98] hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                   type="submit"
                   disabled={loginLoading}
                 >
@@ -378,16 +379,21 @@ const Login = () => {
                 </button>
               </form>
 
-              <p className="mt-7 text-center text-sm text-slate-500">
-                Don't have an account?{" "}
-                <Link to="/register" className="font-semibold text-emerald-600">
-                  Create one
+              {/* Register */}
+              <p className="mt-5 text-center text-sm text-slate-500">
+                New to Nivora?{" "}
+                <Link
+                  to="/register"
+                  className="font-semibold text-emerald-600 transition hover:text-emerald-700"
+                >
+                  Create account
                 </Link>
               </p>
             </div>
           </div>
 
-          <p className="text-center text-xs text-slate-400">
+          {/* Bottom */}
+          <p className="pt-5 text-center text-[11px] text-slate-400">
             Secure access to your financial workspace
           </p>
         </div>
