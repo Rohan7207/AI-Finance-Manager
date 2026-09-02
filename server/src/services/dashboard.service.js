@@ -10,9 +10,33 @@ async function getDashboardData(userId) {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
+  const startOfPreviousMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() - 1,
+    1,
+  );
+
   const incomeSum = await incomeModel.aggregate([
     {
       $match: { user: userId },
+    },
+
+    {
+      $group: {
+        _id: null,
+        totalIncome: { $sum: "$amount" },
+      },
+    },
+  ]);
+
+  const totalIncomeUntilPreviousMonthSum = await incomeModel.aggregate([
+    {
+      $match: {
+        user: userId,
+        incomeDate: {
+          $lt: startOfMonth,
+        },
+      },
     },
 
     {
@@ -42,9 +66,46 @@ async function getDashboardData(userId) {
     },
   ]);
 
+  const previousMonthIncomeSum = await incomeModel.aggregate([
+    {
+      $match: {
+        user: userId,
+        incomeDate: {
+          $gte: startOfPreviousMonth,
+          $lt: startOfMonth,
+        },
+      },
+    },
+
+    {
+      $group: {
+        _id: null,
+        monthlyIncome: { $sum: "$amount" },
+      },
+    },
+  ]);
+
   const expenseSum = await expenseModel.aggregate([
     {
       $match: { user: userId },
+    },
+
+    {
+      $group: {
+        _id: null,
+        totalExpense: { $sum: "$amount" },
+      },
+    },
+  ]);
+
+  const totalExpenseUntilPreviousMonthSum = await expenseModel.aggregate([
+    {
+      $match: {
+        user: userId,
+        expenseDate: {
+          $lt: startOfMonth,
+        },
+      },
     },
 
     {
@@ -74,19 +135,69 @@ async function getDashboardData(userId) {
     },
   ]);
 
+  const previousMonthExpenseSum = await expenseModel.aggregate([
+    {
+      $match: {
+        user: userId,
+        expenseDate: {
+          $gte: startOfPreviousMonth,
+          $lt: startOfMonth,
+        },
+      },
+    },
+
+    {
+      $group: {
+        _id: null,
+        monthlyExpense: { $sum: "$amount" },
+      },
+    },
+  ]);
+
   const totalIncome = incomeSum[0]?.totalIncome || 0;
   const totalExpense = expenseSum[0]?.totalExpense || 0;
 
   const monthlyIncome = monthlyIncomeSum[0]?.monthlyIncome || 0;
   const monthlyExpense = monthlyExpenseSum[0]?.monthlyExpense || 0;
 
+  const previousMonthIncome = previousMonthIncomeSum[0]?.monthlyIncome || 0;
+  const previousMonthExpense = previousMonthExpenseSum[0]?.monthlyExpense || 0;
+
+  const totalIncomeUntilPreviousMonth =
+    totalIncomeUntilPreviousMonthSum[0]?.totalIncome || 0;
+  const totalExpenseUntilPreviousMonth =
+    totalExpenseUntilPreviousMonthSum[0]?.totalExpense || 0;
+
   const balance = totalIncome - totalExpense;
+  const previousBalance =
+    totalIncomeUntilPreviousMonth - totalExpenseUntilPreviousMonth;
+
   const monthlySavings = monthlyIncome - monthlyExpense;
+  const previousMonthSavings = previousMonthIncome - previousMonthExpense;
+
+  const incomeChange = percentageCalculate(monthlyIncome, previousMonthIncome);
+  const expenseChange = percentageCalculate(
+    monthlyExpense,
+    previousMonthExpense,
+  );
+  const balanceChange = percentageCalculate(balance, previousBalance);
+  const savingsChange = percentageCalculate(
+    monthlySavings,
+    previousMonthSavings,
+  );
 
   return {
     totalIncome,
     totalExpense,
     balance,
+
+    changes: {
+      incomeChange,
+      expenseChange,
+      balanceChange,
+      savingsChange,
+    },
+
     monthly: {
       income: monthlyIncome,
       expense: monthlyExpense,
@@ -191,6 +302,18 @@ async function getFinancialContext(userId) {
 
     budgets: budgetAnalytics,
   };
+}
+
+function percentageCalculate(currentValue, previousValue) {
+  if (previousValue === 0) {
+    if (currentValue === 0) {
+      return 0;
+    }
+
+    return null;
+  }
+
+  return ((currentValue - previousValue) / previousValue) * 100;
 }
 
 module.exports = {

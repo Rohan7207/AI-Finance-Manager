@@ -59,29 +59,6 @@ const Landing = () => {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-slate-50 text-slate-900">
-      {/* Financial Radar Cursor */}
-      <div
-        className="pointer-events-none fixed left-0 top-0 z-0 hidden lg:block"
-        style={{
-          transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)`,
-        }}
-      >
-        {/* Outer ring */}
-        <div className="absolute -left-10 -top-10 h-20 w-20 rounded-full border border-emerald-400/20" />
-
-        {/* Inner ring */}
-        <div className="absolute -left-5 -top-5 h-10 w-10 rounded-full border border-violet-400/30" />
-
-        {/* Center point */}
-        <div className="absolute -left-1 -top-1 h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.7)]" />
-
-        {/* Signal points */}
-        <span className="absolute -left-7 -top-7 h-1 w-1 rounded-full bg-emerald-400/60" />
-        <span className="absolute left-6 -top-5 h-1 w-1 rounded-full bg-violet-400/60" />
-        <span className="absolute -left-6 top-0 h-1 w-1 rounded-full bg-emerald-400/50" />
-        <span className="absolute left-7 top-5 h-1 w-1 rounded-full bg-violet-400/50" />
-      </div>
-
       {/* Navbar */}
       <nav className="relative z-50 border-b border-slate-200/60 bg-slate-50/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-8">
