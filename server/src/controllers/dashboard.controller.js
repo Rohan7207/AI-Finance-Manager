@@ -2,14 +2,11 @@ const dashboardService = require("../services/dashboard.service");
 
 async function getDashboardData(req, res) {
   try {
-    const data = await dashboardService.getDashboardData(req.user._id);
+    const dashboardData = await dashboardService.getDashboardData(req.user._id);
 
     return res.status(200).json({
       message: "Data retrieved successfully",
-      totalIncome: data.totalIncome,
-      totalExpense: data.totalExpense,
-      balance: data.balance,
-      monthly: data.monthly,
+      ...dashboardData,
     });
   } catch (err) {
     console.error(err);
@@ -17,14 +14,16 @@ async function getDashboardData(req, res) {
   }
 }
 
-async function getMonthlyFinancialData(req, res) {
+async function getFinancialData(req, res) {
   try {
-    const monthlyFinancialTrend =
-      await dashboardService.getMonthlyFinancialData(req.user._id);
+    const financialTrend = await dashboardService.financialTrend(
+      req.user._id,
+      req.query.period,
+    );
 
     return res.status(200).json({
-      message: "Monthly Financial Trend retrieved successfully",
-      monthlyFinancialTrend,
+      message: "Financial Trend retrieved successfully",
+      ...financialTrend,
     });
   } catch (err) {
     console.error(err);
@@ -32,4 +31,4 @@ async function getMonthlyFinancialData(req, res) {
   }
 }
 
-module.exports = { getDashboardData, getMonthlyFinancialData };
+module.exports = { getDashboardData, getFinancialData };

@@ -83,6 +83,7 @@ async function getBudgetAnalytics(budgetId, userId) {
 
   if (now < budget.startDate) {
     return {
+      budgetId: budget._id,
       budget: budget.amount,
       spent: 0,
       remaining: budget.amount,
@@ -117,6 +118,7 @@ async function getBudgetAnalytics(budgetId, userId) {
   const percentageUsed = (totalExpensesSum / budget.amount) * 100;
 
   return {
+    budgetId: budget._id,
     budget: budget.amount,
     spent: totalExpensesSum,
     remaining,

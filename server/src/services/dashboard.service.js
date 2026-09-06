@@ -186,6 +186,16 @@ async function getDashboardData(userId) {
     previousMonthSavings,
   );
 
+  const activeBudgets = await budgetService.getActiveBudgets(userId);
+
+  const budgetOverview = await Promise.all(
+    activeBudgets.map((budget) =>
+      budgetService.getBudgetAnalytics(budget._id, userId),
+    ),
+  );
+
+  const recentTransactions = await getRecentTransactions(userId);
+
   return {
     totalIncome,
     totalExpense,
@@ -203,69 +213,175 @@ async function getDashboardData(userId) {
       expense: monthlyExpense,
       savings: monthlySavings,
     },
+
+    budgetOverview,
+    recentTransactions,
   };
 }
 
-async function getMonthlyFinancialData(userId) {
-  const monthlyIncome = await incomeService.getMonthlyIncomeAnalytics(userId);
+async function financialTrend(userId, period) {
+  const now = new Date();
 
-  const monthlyExpense =
-    await expenseService.getMonthlyExpenseAnalytics(userId);
+  let startDate;
+  let endDate;
+  let incomeGroup;
+  let expenseGroup;
 
-  const months = [
-    ...monthlyIncome.map((item) => `${item.year}-${item.month}`),
-    ...monthlyExpense.map((item) => `${item.year}-${item.month}`),
-  ];
+  if (period === "week") {
+    const day = now.getDay();
 
-  const uniqueMonths = [...new Set(months)];
+    startDate = new Date(now);
+    startDate.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+    startDate.setHours(0, 0, 0, 0);
 
-  const monthlyFinancialTrend = uniqueMonths.map((monthKey) => {
-    const [year, month] = monthKey.split("-");
+    endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 7);
 
-    const income = monthlyIncome.find(
-      (item) => item.year === Number(year) && item.month === month,
-    );
+    incomeGroup = {
+      year: { $year: "$incomeDate" },
+      month: { $month: "$incomeDate" },
+      day: { $dayOfMonth: "$incomeDate" },
+    };
 
-    const expense = monthlyExpense.find(
-      (item) => item.year === Number(year) && item.month === month,
-    );
+    expenseGroup = {
+      year: { $year: "$expenseDate" },
+      month: { $month: "$expenseDate" },
+      day: { $dayOfMonth: "$expenseDate" },
+    };
+  } else if (period === "month") {
+    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-    const incomeAmount = income ? income.totalIncome : 0;
-    const expenseAmount = expense ? expense.totalExpense : 0;
+    incomeGroup = {
+      year: { $year: "$incomeDate" },
+      month: { $month: "$incomeDate" },
+      day: { $dayOfMonth: "$incomeDate" },
+    };
 
-    return {
-      year: Number(year),
-      month,
-      income: incomeAmount,
-      expense: expenseAmount,
-      savings: incomeAmount - expenseAmount,
+    expenseGroup = {
+      year: { $year: "$expenseDate" },
+      month: { $month: "$expenseDate" },
+      day: { $dayOfMonth: "$expenseDate" },
+    };
+  } else if (period === "year") {
+    startDate = new Date(now.getFullYear(), 0, 1);
+    endDate = new Date(now.getFullYear() + 1, 0, 1);
+
+    incomeGroup = {
+      year: { $year: "$incomeDate" },
+      month: { $month: "$incomeDate" },
+    };
+
+    expenseGroup = {
+      year: { $year: "$expenseDate" },
+      month: { $month: "$expenseDate" },
+    };
+  } else {
+    throw new Error("Invalid period. Use week, month, or year.");
+  }
+
+  const incomeData = await incomeModel.aggregate([
+    {
+      $match: {
+        user: userId,
+        incomeDate: {
+          $gte: startDate,
+          $lt: endDate,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: incomeGroup,
+        income: { $sum: "$amount" },
+      },
+    },
+    {
+      $sort: {
+        "_id.year": 1,
+        "_id.month": 1,
+        "_id.day": 1,
+      },
+    },
+  ]);
+
+  const expenseData = await expenseModel.aggregate([
+    {
+      $match: {
+        user: userId,
+        expenseDate: {
+          $gte: startDate,
+          $lt: endDate,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: expenseGroup,
+        expense: { $sum: "$amount" },
+      },
+    },
+    {
+      $sort: {
+        "_id.year": 1,
+        "_id.month": 1,
+        "_id.day": 1,
+      },
+    },
+  ]);
+
+  // Combine income and expense data here
+  // Then calculate savings and return the final chart data.
+  const getKey = (id) => {
+    const year = id.year;
+    const month = String(id.month).padStart(2, "0");
+
+    if (id.day) {
+      const day = String(id.day).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    return `${year}-${month}`;
+  };
+
+  const combinedData = {};
+
+  incomeData.forEach((item) => {
+    const key = getKey(item._id);
+
+    combinedData[key] = {
+      date: key,
+      income: item.income,
+      expense: 0,
     };
   });
 
-  const monthOrder = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
+  expenseData.forEach((item) => {
+    const key = getKey(item._id);
 
-  monthlyFinancialTrend.sort((a, b) => {
-    if (a.year !== b.year) {
-      return a.year - b.year;
+    if (!combinedData[key]) {
+      combinedData[key] = {
+        date: key,
+        income: 0,
+        expense: 0,
+      };
     }
 
-    return monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month);
+    combinedData[key].expense = item.expense;
   });
 
-  return monthlyFinancialTrend;
+  const financialTrend = Object.values(combinedData)
+    .map((item) => ({
+      date: item.date,
+      income: item.income,
+      expense: item.expense,
+      savings: item.income - item.expense,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  return {
+    financialTrend,
+  };
 }
 
 async function getFinancialContext(userId) {
@@ -313,11 +429,49 @@ function percentageCalculate(currentValue, previousValue) {
     return null;
   }
 
-  return ((currentValue - previousValue) / previousValue) * 100;
+  return Number(
+    (((currentValue - previousValue) / previousValue) * 100).toFixed(2),
+  );
+}
+
+async function getRecentTransactions(userId) {
+  const incomes = await incomeModel
+    .find({ user: userId })
+    .sort({ incomeDate: -1 })
+    .limit(5)
+    .lean();
+
+  const expenses = await expenseModel
+    .find({ user: userId })
+    .sort({ expenseDate: -1 })
+    .limit(5)
+    .lean();
+
+  const transactions = [
+    ...incomes.map((income) => ({
+      type: "income",
+      amount: income.amount,
+      description: income.description,
+      date: income.incomeDate,
+      source: income.source,
+    })),
+
+    ...expenses.map((expense) => ({
+      type: "expense",
+      amount: expense.amount,
+      description: expense.description,
+      date: expense.expenseDate,
+      category: expense.category,
+    })),
+  ];
+
+  return transactions
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 5);
 }
 
 module.exports = {
   getDashboardData,
-  getMonthlyFinancialData,
+  financialTrend,
   getFinancialContext,
 };

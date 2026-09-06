@@ -49,6 +49,19 @@ async function deleteExpense(expenseId, userId) {
 }
 
 async function getExpenseAnalytics(userId) {
+  /*
+    $group
+    ↓
+    How much did I spend in each category?
+
+    $setWindowFields
+    ↓
+    How much did I spend in total?
+
+    $project
+    ↓
+    What percentage of my total spending is each category?
+  */
   const expenseByCategory = await expenseModel.aggregate([
     {
       $match: {
@@ -59,13 +72,40 @@ async function getExpenseAnalytics(userId) {
     {
       $group: {
         _id: "$category",
-        categoryExpenses: { $sum: "$amount" },
+        categoryExpense: { $sum: "$amount" },
+      },
+    },
+
+    {
+      $setWindowFields: {
+        output: {
+          grandTotal: { $sum: "$categoryExpense" },
+        },
+      },
+    },
+
+    {
+      $project: {
+        _id: 0,
+        category: "$_id",
+        categoryExpense: 1,
+        percentage: {
+          $round: [
+            {
+              $multiply: [
+                { $divide: ["$categoryExpense", "$grandTotal"] },
+                100,
+              ],
+            },
+            2,
+          ],
+        },
       },
     },
 
     {
       $sort: {
-        categoryExpenses: -1,
+        categoryExpense: -1,
       },
     },
   ]);
