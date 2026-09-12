@@ -189,9 +189,17 @@ async function getDashboardData(userId) {
   const activeBudgets = await budgetService.getActiveBudgets(userId);
 
   const budgetOverview = await Promise.all(
-    activeBudgets.map((budget) =>
-      budgetService.getBudgetAnalytics(budget._id, userId),
-    ),
+    activeBudgets.map(async (budget) => {
+      const analytics = await budgetService.getBudgetAnalytics(
+        budget._id,
+        userId,
+      );
+
+      return {
+        ...analytics,
+        name: analytics.name || budget.name || "Unnamed Budget",
+      };
+    }),
   );
 
   const recentTransactions = await getRecentTransactions(userId);

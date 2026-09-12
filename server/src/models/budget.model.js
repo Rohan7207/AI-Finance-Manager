@@ -8,6 +8,14 @@ const budgetSchema = new mongoose.Schema(
       required: true,
     },
 
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 2,
+      maxlength: 50,
+    },
+
     amount: {
       type: Number,
       required: true,

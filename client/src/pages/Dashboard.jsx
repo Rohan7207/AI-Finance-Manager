@@ -1,11 +1,101 @@
 import React from "react";
+import { useState } from "react";
+import { useEffect } from "react";
+import api from "../api";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
 
 const Dashboard = () => {
+  const [loading, setLoading] = useState(false);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [error, setError] = useState("");
+
+  const [profile, setProfile] = useState(null);
+
+  const [chartPeriod, setChartPeriod] = useState("week");
+  const [chartData, setChartData] = useState([]);
+  const [chartLoading, setChartLoading] = useState(false);
+  const [chartError, setChartError] = useState("");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get("/users/profile", {
+          withCredentials: true,
+        });
+
+        setProfile(response.data.user);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        setLoading(true);
+
+        const response = await api.get("/dashboard", {
+          withCredentials: true,
+        });
+
+        setDashboardData(response.data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load dashboard data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
+  useEffect(() => {
+    const fetchFinancialTrend = async () => {
+      try {
+        setChartLoading(true);
+        setChartError("");
+
+        const response = await api.get("/dashboard/financial-trend", {
+          params: {
+            period: chartPeriod,
+          },
+          withCredentials: true,
+        });
+
+        setChartData(response.data.financialTrend || []);
+      } catch (err) {
+        console.error(err);
+        setChartError("Failed to load financial trend.");
+        setChartData([]);
+      } finally {
+        setChartLoading(false);
+      }
+    };
+
+    fetchFinancialTrend();
+  }, [chartPeriod]);
+
   const summaryCards = [
     {
       title: "Total Balance",
-      value: "₹84,250",
-      change: "+8.2%",
+      value: dashboardData
+        ? `₹${dashboardData.balance.toLocaleString("en-IN")}`
+        : "-",
+      change: dashboardData
+        ? `${dashboardData.changes.balanceChange > 0 ? "+" : ""}${dashboardData.changes.balanceChange}%`
+        : "-",
       subtitle: "vs last month",
       icon: "₹",
       iconStyle: "bg-emerald-50 text-emerald-600",
@@ -13,8 +103,12 @@ const Dashboard = () => {
     },
     {
       title: "Total Income",
-      value: "₹68,500",
-      change: "+12.5%",
+      value: dashboardData
+        ? `₹${dashboardData.totalIncome.toLocaleString("en-IN")}`
+        : "-",
+      change: dashboardData
+        ? `${dashboardData.changes.incomeChange > 0 ? "+" : ""}${dashboardData.changes.incomeChange}%`
+        : "-",
       subtitle: "vs last month",
       icon: "↗",
       iconStyle: "bg-blue-50 text-blue-600",
@@ -22,8 +116,12 @@ const Dashboard = () => {
     },
     {
       title: "Total Expenses",
-      value: "₹32,750",
-      change: "-4.8%",
+      value: dashboardData
+        ? `₹${dashboardData.totalExpense.toLocaleString("en-IN")}`
+        : "-",
+      change: dashboardData
+        ? `${dashboardData.changes.expenseChange > 0 ? "+" : ""}${dashboardData.changes.expenseChange}%`
+        : "-",
       subtitle: "vs last month",
       icon: "↘",
       iconStyle: "bg-rose-50 text-rose-600",
@@ -31,8 +129,12 @@ const Dashboard = () => {
     },
     {
       title: "Savings",
-      value: "₹35,750",
-      change: "+16.4%",
+      value: dashboardData
+        ? `₹${dashboardData.monthly.savings.toLocaleString("en-IN")}`
+        : "-",
+      change: dashboardData
+        ? `${dashboardData.changes.savingsChange > 0 ? "+" : ""}${dashboardData.changes.savingsChange}%`
+        : "-",
       subtitle: "this month",
       icon: "◈",
       iconStyle: "bg-violet-50 text-violet-600",
@@ -40,64 +142,29 @@ const Dashboard = () => {
     },
   ];
 
-  const transactions = [
-    {
-      name: "Swiggy",
-      category: "Food",
-      date: "Today, 7:42 PM",
-      amount: "-₹420",
-      icon: "🍔",
-      iconStyle: "bg-orange-50",
-    },
-    {
-      name: "Uber",
-      category: "Travel",
-      date: "Today, 5:18 PM",
-      amount: "-₹280",
-      icon: "🚕",
-      iconStyle: "bg-slate-100",
-    },
-    {
-      name: "Amazon",
-      category: "Shopping",
-      date: "Yesterday",
-      amount: "-₹1,299",
-      icon: "🛍️",
-      iconStyle: "bg-yellow-50",
-    },
-    {
-      name: "Salary",
-      category: "Income",
-      date: "Sep 1, 2026",
-      amount: "+₹45,000",
-      icon: "💰",
-      iconStyle: "bg-emerald-50",
-    },
-  ];
+  const transactions = dashboardData?.recentTransactions || [];
+  const budgets = dashboardData?.budgetOverview || [];
 
-  const budgets = [
-    {
-      name: "Food",
-      spent: "₹6,250",
-      limit: "₹10,000",
-      percentage: 63,
-      bar: "bg-orange-400",
-    },
-    {
-      name: "Travel",
-      spent: "₹4,100",
-      limit: "₹8,000",
-      percentage: 51,
-      bar: "bg-blue-500",
-    },
-    {
-      name: "Shopping",
-      spent: "₹7,200",
-      limit: "₹10,000",
-      percentage: 72,
-      bar: "bg-violet-500",
-    },
-  ];
+  const chartPoints = chartData.map((item) => ({
+    date: item.date,
+    income: item.income,
+    expense: item.expense,
+  }));
+
+  const currentHour = new Date().getHours();
+
+  const greeting =
+    currentHour < 12
+      ? "Good morning"
+      : currentHour < 18
+        ? "Good afternoon"
+        : "Good evening";
+
+  const chartPeriodLabel = {
+    week: "last 7 days",
+    month: "last 30 days",
+    year: "last 12 months",
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -153,7 +220,7 @@ const Dashboard = () => {
             </button>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
-              R
+              {profile?.username?.charAt(0).toUpperCase() || "U"}
             </div>
           </div>
         </div>
@@ -164,12 +231,12 @@ const Dashboard = () => {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-medium text-emerald-600">
-              Wednesday, September 2
+            <p className="mt-1 text-sm text-slate-500">
+              Your income and expenses over the {chartPeriodLabel[chartPeriod]}
             </p>
 
             <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-              Good evening, Rohan 👋
+              {greeting}, {profile?.username || "there"} 👋
             </h1>
 
             <p className="mt-2 text-sm text-slate-500">
@@ -190,7 +257,7 @@ const Dashboard = () => {
               className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-sm"
             >
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-slate-500">
+                <p className="text-xs font-medium text-slate-500 sm:text-sm">
                   {card.title}
                 </p>
 
@@ -201,12 +268,12 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <div className="mt-4">
-                <h2 className="text-2xl font-bold tracking-tight">
+              <div className="mt-3">
+                <h2 className="text-lg font-bold tracking-tight sm:text-xl">
                   {card.value}
                 </h2>
 
-                <div className="mt-2 flex items-center gap-2 text-xs">
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                   <span className={`font-semibold ${card.changeStyle}`}>
                     {card.change}
                   </span>
@@ -222,145 +289,157 @@ const Dashboard = () => {
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           {/* Income & Expenses */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 lg:col-span-2">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-lg font-semibold">Income & Expenses</h2>
 
-                <p className="mt-1 text-sm text-slate-500">
-                  Your income and expenses over the last 7 days
+                <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
+                  {chartPeriod === "week"
+                    ? "Your income and expenses over the last 7 days"
+                    : chartPeriod === "month"
+                      ? "Your income and expenses over the last 30 days"
+                      : "Your income and expenses over the last 12 months"}
                 </p>
               </div>
 
-              <button className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50">
-                This Week
-              </button>
+              <div className="flex shrink-0 rounded-lg border border-slate-200 p-1">
+                {["week", "month", "year"].map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => setChartPeriod(period)}
+                    className={`rounded-md px-3 py-1.5 text-xs font-medium capitalize transition ${
+                      chartPeriod === period
+                        ? "bg-slate-100 text-slate-700"
+                        : "text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    {period}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Chart */}
             <div className="mt-8">
-              <div className="relative h-52 sm:h-56">
-                {/* Horizontal Grid */}
-                <div className="absolute inset-0 flex flex-col justify-between">
-                  {[1, 2, 3, 4, 5].map((line) => (
-                    <div key={line} className="border-t border-slate-100" />
-                  ))}
-                </div>
+              <div className="h-44 sm:h-56">
+                {chartLoading ? (
+                  <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                    Loading chart...
+                  </div>
+                ) : chartError ? (
+                  <div className="flex h-full items-center justify-center text-sm text-rose-500">
+                    {chartError}
+                  </div>
+                ) : chartPoints.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                    No financial data available.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={chartPoints}
+                      margin={{ top: 10, right: 10, left: 5, bottom: 0 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="#f1f5f9"
+                      />
 
-                {/* Y Axis */}
-                <div className="absolute -left-1 top-0 flex h-full -translate-x-full flex-col justify-between pr-3 text-[10px] text-slate-400">
-                  <span>₹60k</span>
-                  <span>₹45k</span>
-                  <span>₹30k</span>
-                  <span>₹15k</span>
-                  <span>₹0</span>
-                </div>
+                      <XAxis
+                        dataKey="date"
+                        interval="preserveStartEnd"
+                        tickFormatter={(date) => {
+                          const formattedDate = new Date(date);
 
-                <svg
-                  viewBox="0 0 700 220"
-                  className="relative h-full w-full overflow-visible"
-                  preserveAspectRatio="none"
-                >
-                  {/* Income Area */}
-                  <path
-                    d="
-                      M 0 75
-                      C 70 85, 100 50, 170 65
-                      S 250 90, 320 55
-                      S 410 40, 470 65
-                      S 550 45, 610 35
-                      S 670 30, 700 20
-                      L 700 220
-                      L 0 220
-                      Z
-                    "
-                    className="fill-emerald-50"
-                  />
+                          if (chartPeriod === "week") {
+                            return formattedDate.toLocaleDateString("en-IN", {
+                              weekday: "short",
+                            });
+                          }
 
-                  {/* Income */}
-                  <path
-                    d="
-                      M 0 75
-                      C 70 85, 100 50, 170 65
-                      S 250 90, 320 55
-                      S 410 40, 470 65
-                      S 550 45, 610 35
-                      S 670 30, 700 20
-                    "
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    className="text-emerald-500"
-                  />
+                          if (chartPeriod === "month") {
+                            return formattedDate.toLocaleDateString("en-IN", {
+                              month: "short",
+                              day: "numeric",
+                            });
+                          }
 
-                  {/* Income Points */}
-                  {[
-                    [0, 75],
-                    [115, 58],
-                    [220, 78],
-                    [320, 55],
-                    [470, 65],
-                    [610, 35],
-                    [700, 20],
-                  ].map(([x, y], index) => (
-                    <circle
-                      key={`income-${index}`}
-                      cx={x}
-                      cy={y}
-                      r="5"
-                      className="fill-white stroke-emerald-500"
-                      strokeWidth="3"
-                    />
-                  ))}
+                          return formattedDate.toLocaleDateString("en-IN", {
+                            month: "short",
+                          });
+                        }}
+                        tick={{
+                          fontSize: 10,
+                          fill: "#94a3b8",
+                        }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
 
-                  {/* Expenses */}
-                  <path
-                    d="
-                      M 0 150
-                      C 70 140, 100 130, 170 145
-                      S 250 155, 320 125
-                      S 410 115, 470 130
-                      S 550 140, 610 110
-                      S 670 105, 700 90
-                    "
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    className="text-violet-500"
-                  />
+                      <YAxis
+                        tick={{
+                          fontSize: 10,
+                          fill: "#94a3b8",
+                        }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(value) =>
+                          value >= 1000 ? `₹${value / 1000}k` : `₹${value}`
+                        }
+                      />
 
-                  {/* Expenses Points */}
-                  {[
-                    [0, 150],
-                    [115, 135],
-                    [220, 150],
-                    [320, 125],
-                    [470, 130],
-                    [610, 110],
-                    [700, 90],
-                  ].map(([x, y], index) => (
-                    <circle
-                      key={`expense-${index}`}
-                      cx={x}
-                      cy={y}
-                      r="5"
-                      className="fill-white stroke-violet-500"
-                      strokeWidth="3"
-                    />
-                  ))}
-                </svg>
-              </div>
+                      <Tooltip
+                        cursor={{ stroke: "#cbd5e1", strokeDasharray: "4 4" }}
+                        formatter={(value, name) => [
+                          `₹${Number(value).toLocaleString("en-IN")}`,
+                          name === "income" ? "Income" : "Expenses",
+                        ]}
+                        labelFormatter={(date) =>
+                          new Date(date).toLocaleDateString("en-IN", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                          })
+                        }
+                      />
 
-              {/* Days */}
-              <div className="mt-3 flex justify-between text-xs text-slate-400">
-                <span>Mon</span>
-                <span>Tue</span>
-                <span>Wed</span>
-                <span>Thu</span>
-                <span>Fri</span>
-                <span>Sat</span>
-                <span>Sun</span>
+                      <Line
+                        type="monotone"
+                        dataKey="income"
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        dot={{
+                          r: 4,
+                          fill: "#ffffff",
+                          stroke: "#10b981",
+                          strokeWidth: 2,
+                        }}
+                        activeDot={{
+                          r: 6,
+                          strokeWidth: 2,
+                        }}
+                      />
+
+                      <Line
+                        type="monotone"
+                        dataKey="expense"
+                        stroke="#8b5cf6"
+                        strokeWidth={3}
+                        dot={{
+                          r: 4,
+                          fill: "#ffffff",
+                          stroke: "#8b5cf6",
+                          strokeWidth: 2,
+                        }}
+                        activeDot={{
+                          r: 6,
+                          strokeWidth: 2,
+                        }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </div>
 
               {/* Legend */}
@@ -441,40 +520,45 @@ const Dashboard = () => {
             </div>
 
             <div className="mt-6 divide-y divide-slate-100">
-              {transactions.map((transaction) => (
-                <div
-                  key={transaction.name}
-                  className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${transaction.iconStyle}`}
-                    >
-                      {transaction.icon}
-                    </div>
+              {transactions.map((transaction, index) => {
+                const isIncome = transaction.type === "income";
 
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">
-                        {transaction.name}
-                      </p>
-
-                      <p className="mt-0.5 text-xs text-slate-400">
-                        {transaction.category} · {transaction.date}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p
-                    className={`shrink-0 text-sm font-semibold ${
-                      transaction.amount.startsWith("+")
-                        ? "text-emerald-600"
-                        : "text-slate-900"
-                    }`}
+                return (
+                  <div
+                    key={`${transaction.date}-${index}`}
+                    className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0"
                   >
-                    {transaction.amount}
-                  </p>
-                </div>
-              ))}
+                    <div className="flex min-w-0 capitalize items-center gap-3">
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                          isIncome ? "bg-emerald-50" : "bg-rose-50"
+                        }`}
+                      >
+                        {isIncome ? "↗" : "↘"}
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">
+                          {transaction.description}
+                        </p>
+
+                        <p className="mt-0.5 text-xs text-slate-400">
+                          {isIncome ? transaction.source : transaction.category}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p
+                      className={`shrink-0 text-sm font-semibold ${
+                        isIncome ? "text-emerald-600" : "text-slate-900"
+                      }`}
+                    >
+                      {isIncome ? "+" : "-"}₹
+                      {transaction.amount.toLocaleString("en-IN")}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -494,46 +578,40 @@ const Dashboard = () => {
               </button>
             </div>
 
-            <div className="mt-6 space-y-6">
-              {budgets.map((budget) => (
-                <div key={budget.name}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-slate-700">
-                      {budget.name}
-                    </span>
+            <div className="mt-8 space-y-8">
+              {budgets
+                .filter((budget) => budget.name !== "Unnamed Budget")
+                .slice(0, 3)
+                .map((budget) => (
+                  <div key={budget.budgetId}>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-slate-700">
+                        {budget.name}
+                      </span>
 
-                    <span className="text-xs text-slate-400">
-                      {budget.spent} / {budget.limit}
-                    </span>
+                      <span className="text-xs text-slate-400">
+                        ₹{budget.spent.toLocaleString("en-IN")} / ₹
+                        {budget.budget.toLocaleString("en-IN")}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-emerald-500"
+                        style={{
+                          width: `${Math.min(budget.percentageUsed, 100)}%`,
+                        }}
+                      />
+                    </div>
+
+                    <div className="mt-1 flex justify-between text-xs text-slate-400">
+                      <span>{budget.percentageUsed}% used</span>
+                      <span>
+                        ₹{budget.remaining.toLocaleString("en-IN")} remaining
+                      </span>
+                    </div>
                   </div>
-
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className={`h-full rounded-full ${budget.bar}`}
-                      style={{
-                        width: `${budget.percentage}%`,
-                      }}
-                    />
-                  </div>
-
-                  <div className="mt-1 text-right text-xs text-slate-400">
-                    {budget.percentage}% used
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-7 rounded-xl bg-slate-50 p-4">
-              <p className="text-xs font-medium text-slate-500">
-                Monthly budget
-              </p>
-
-              <p className="mt-1 text-xl font-bold">
-                ₹28,450
-                <span className="ml-1 text-xs font-normal text-slate-400">
-                  remaining
-                </span>
-              </p>
+                ))}
             </div>
           </div>
         </div>

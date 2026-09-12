@@ -1,21 +1,38 @@
 const budgetModel = require("../models/budget.model");
 const expenseModel = require("../models/expense.model");
 
+function normalizeBudgetName(name) {
+  const trimmedName = typeof name === "string" ? name.trim() : "";
+  return trimmedName || "Unnamed Budget";
+}
+
+function mapBudgetWithName(budget) {
+  if (!budget) return budget;
+
+  const plainBudget = budget.toObject ? budget.toObject() : budget;
+
+  return {
+    ...plainBudget,
+    name: normalizeBudgetName(plainBudget.name),
+  };
+}
+
 async function createBudget(budgetData, userId) {
   const budget = new budgetModel({
     ...budgetData,
+    name: normalizeBudgetName(budgetData.name),
     user: userId,
   });
 
   await budget.save();
 
-  return budget;
+  return mapBudgetWithName(budget);
 }
 
 async function getBudgets(userId) {
   const budgets = await budgetModel.find({ user: userId });
 
-  return budgets;
+  return budgets.map(mapBudgetWithName);
 }
 
 async function getBudgetById(budgetId, userId) {
@@ -24,7 +41,7 @@ async function getBudgetById(budgetId, userId) {
     user: userId,
   });
 
-  return budget;
+  return mapBudgetWithName(budget);
 }
 
 async function updateBudget(budgetData, budgetId, userId) {
@@ -37,8 +54,16 @@ async function updateBudget(budgetData, budgetId, userId) {
     throw new Error("Budget not found");
   }
 
-  const startDate = budgetData.startDate || budget.startDate;
-  const endDate = budgetData.endDate || budget.endDate;
+  const normalizedBudgetData = {
+    ...budgetData,
+  };
+
+  if (normalizedBudgetData.name !== undefined) {
+    normalizedBudgetData.name = normalizeBudgetName(normalizedBudgetData.name);
+  }
+
+  const startDate = normalizedBudgetData.startDate || budget.startDate;
+  const endDate = normalizedBudgetData.endDate || budget.endDate;
 
   if (new Date(endDate) <= new Date(startDate)) {
     throw new Error("End Date must be after Start Date");
@@ -49,14 +74,14 @@ async function updateBudget(budgetData, budgetId, userId) {
       _id: budgetId,
       user: userId,
     },
-    budgetData,
+    normalizedBudgetData,
     {
       new: true,
       runValidators: true,
     },
   );
 
-  return updatedBudget;
+  return updatedBudget ? mapBudgetWithName(updatedBudget) : updatedBudget;
 }
 
 async function deleteBudget(budgetId, userId) {
@@ -79,11 +104,13 @@ async function getBudgetAnalytics(budgetId, userId) {
     throw new Error("Budget not found");
   }
 
+  const safeName = normalizeBudgetName(budget.name);
   const now = new Date();
 
   if (now < budget.startDate) {
     return {
       budgetId: budget._id,
+      name: safeName,
       budget: budget.amount,
       spent: 0,
       remaining: budget.amount,
@@ -115,10 +142,13 @@ async function getBudgetAnalytics(budgetId, userId) {
 
   const totalExpensesSum = analytics[0]?.totalExpensesSum || 0;
   const remaining = budget.amount - totalExpensesSum;
-  const percentageUsed = (totalExpensesSum / budget.amount) * 100;
+  const percentageUsed = Number(
+    ((totalExpensesSum / budget.amount) * 100).toFixed(2),
+  );
 
   return {
     budgetId: budget._id,
+    name: safeName,
     budget: budget.amount,
     spent: totalExpensesSum,
     remaining,
