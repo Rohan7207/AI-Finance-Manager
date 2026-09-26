@@ -265,7 +265,7 @@ const Landing = () => {
                 </div>
               </div>
 
-              {/* Buttons */}
+              {/* Buttons
               <div className="mt-7 flex gap-3">
                 <Link
                   to="/register"
@@ -280,7 +280,7 @@ const Landing = () => {
                 >
                   Sign in
                 </Link>
-              </div>
+              </div> */}
             </div>
 
             {/* Desktop Visual */}
@@ -580,7 +580,7 @@ const Landing = () => {
         <section className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden px-5 py-5 md:hidden">
           {/* Heading */}
           <div className="shrink-0 text-center">
-            <h1 className="text-3xl font-bold leading-tight tracking-tight text-slate-900">
+            <h1 className="text-2xl font-bold leading-tight tracking-tight text-slate-900">
               Understand your money.
               <span className="block text-emerald-600">
                 Make smarter decisions.

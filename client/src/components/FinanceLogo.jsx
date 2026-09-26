@@ -4,7 +4,7 @@ const FinanceLogo = ({ showText = true }) => {
   return (
     <div className="flex items-center gap-3">
       {/* Abstract A + Growth Logo */}
-      <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 shadow-lg">
+      <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500  shadow-lg">
         <svg
           viewBox="0 0 40 40"
           className="h-7 w-7"
@@ -42,10 +42,16 @@ const FinanceLogo = ({ showText = true }) => {
         </svg>
       </div>
 
+      {/* Brand text */}
       {showText && (
-        <span className="text-xl font-bold tracking-tight text-slate-900">
-          Nivora
-        </span>
+        <div>
+          <p className="text-base font-bold tracking-tight text-slate-900">
+            Nivora
+          </p>
+          <p className="hidden text-[10px] text-emerald-700 sm:block">
+            AI Finance Manager
+          </p>
+        </div>
       )}
     </div>
   );

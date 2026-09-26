@@ -7,8 +7,12 @@ import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ResetPassword from "./pages/ResetPassword";
 import PublicRoute from "./components/PublicRoute";
+import ProtectedLayout from "./components/ProtectedLayout";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
+import Transactions from "./pages/Transactions";
+import Budgets from "./pages/Budgets";
+import Insights from "./pages/Insights";
 
 const App = () => {
   return (
@@ -35,14 +39,19 @@ const App = () => {
             }
           />
           <Route path="/reset-password" element={<ResetPassword />} />
+
           <Route
-            path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <ProtectedLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/transactions" element={<Transactions />} />
+            <Route path="/budgets" element={<Budgets />} />
+            <Route path="/insights" element={<Insights />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </AuthProvider>

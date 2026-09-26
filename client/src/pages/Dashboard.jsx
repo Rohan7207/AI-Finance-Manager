@@ -1,4 +1,5 @@
 import React from "react";
+import { useOutletContext } from "react-router-dom";
 import { useState } from "react";
 import { useEffect } from "react";
 import api from "../api";
@@ -11,53 +12,40 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
+import AddTransactionModal from "../components/AddTransactionModal";
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [error, setError] = useState("");
 
-  const [profile, setProfile] = useState(null);
+  const { profile } = useOutletContext();
 
   const [chartPeriod, setChartPeriod] = useState("week");
   const [chartData, setChartData] = useState([]);
   const [chartLoading, setChartLoading] = useState(false);
   const [chartError, setChartError] = useState("");
 
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
+
+  const fetchDashboard = async () => {
+    try {
+      setLoading(true);
+
+      const response = await api.get("/dashboard", {
+        withCredentials: true,
+      });
+
+      setDashboardData(response.data);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load dashboard data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await api.get("/users/profile", {
-          withCredentials: true,
-        });
-
-        setProfile(response.data.user);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchProfile();
-  }, []);
-
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        setLoading(true);
-
-        const response = await api.get("/dashboard", {
-          withCredentials: true,
-        });
-
-        setDashboardData(response.data);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load dashboard data.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboard();
   }, []);
 
@@ -167,65 +155,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      {/* Navbar */}
-      <nav className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 font-bold text-white">
-              N
-            </div>
-
-            <div>
-              <p className="text-base font-bold tracking-tight">Nivora</p>
-              <p className="hidden text-[10px] text-slate-400 sm:block">
-                AI Finance Manager
-              </p>
-            </div>
-          </div>
-
-          {/* Desktop Navigation */}
-          <div className="hidden items-center gap-7 md:flex">
-            <a href="#" className="text-sm font-medium text-emerald-600">
-              Dashboard
-            </a>
-
-            <a
-              href="#"
-              className="text-sm font-medium text-slate-500 transition hover:text-slate-900"
-            >
-              Transactions
-            </a>
-
-            <a
-              href="#"
-              className="text-sm font-medium text-slate-500 transition hover:text-slate-900"
-            >
-              Budgets
-            </a>
-
-            <a
-              href="#"
-              className="text-sm font-medium text-slate-500 transition hover:text-slate-900"
-            >
-              Insights
-            </a>
-          </div>
-
-          {/* User */}
-          <div className="flex items-center gap-3">
-            <button className="hidden rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50 sm:block">
-              + Add Transaction
-            </button>
-
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
-              {profile?.username?.charAt(0).toUpperCase() || "U"}
-            </div>
-          </div>
-        </div>
-      </nav>
-
+    <main className="min-h-screen bg-slate-50 text-slate-900">
       {/* Main */}
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {/* Header */}
@@ -244,7 +174,11 @@ const Dashboard = () => {
             </p>
           </div>
 
-          <button className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setShowAddTransaction(true)}
+            className="hidden w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 sm:w-auto sm:block"
+          >
             + Add Transaction
           </button>
         </div>
@@ -520,45 +454,60 @@ const Dashboard = () => {
             </div>
 
             <div className="mt-6 divide-y divide-slate-100">
-              {transactions.map((transaction, index) => {
-                const isIncome = transaction.type === "income";
+              {transactions.length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className="text-sm font-medium text-slate-600">
+                    No transactions yet
+                  </p>
 
-                return (
-                  <div
-                    key={`${transaction.date}-${index}`}
-                    className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0"
-                  >
-                    <div className="flex min-w-0 capitalize items-center gap-3">
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                          isIncome ? "bg-emerald-50" : "bg-rose-50"
+                  <p className="mt-1 text-xs text-slate-400">
+                    Add your first income or expense to start tracking your
+                    finances.
+                  </p>
+                </div>
+              ) : (
+                transactions.map((transaction, index) => {
+                  const isIncome = transaction.type === "income";
+
+                  return (
+                    <div
+                      key={`${transaction.date}-${index}`}
+                      className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0"
+                    >
+                      <div className="flex min-w-0 capitalize items-center gap-3">
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                            isIncome ? "bg-emerald-50" : "bg-rose-50"
+                          }`}
+                        >
+                          {isIncome ? "↗" : "↘"}
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold">
+                            {transaction.description}
+                          </p>
+
+                          <p className="mt-0.5 text-xs text-slate-400">
+                            {isIncome
+                              ? transaction.source
+                              : transaction.category}
+                          </p>
+                        </div>
+                      </div>
+
+                      <p
+                        className={`shrink-0 text-sm font-semibold ${
+                          isIncome ? "text-emerald-600" : "text-slate-900"
                         }`}
                       >
-                        {isIncome ? "↗" : "↘"}
-                      </div>
-
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">
-                          {transaction.description}
-                        </p>
-
-                        <p className="mt-0.5 text-xs text-slate-400">
-                          {isIncome ? transaction.source : transaction.category}
-                        </p>
-                      </div>
+                        {isIncome ? "+" : "-"}₹
+                        {transaction.amount.toLocaleString("en-IN")}
+                      </p>
                     </div>
-
-                    <p
-                      className={`shrink-0 text-sm font-semibold ${
-                        isIncome ? "text-emerald-600" : "text-slate-900"
-                      }`}
-                    >
-                      {isIncome ? "+" : "-"}₹
-                      {transaction.amount.toLocaleString("en-IN")}
-                    </p>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -579,49 +528,78 @@ const Dashboard = () => {
             </div>
 
             <div className="mt-8 space-y-8">
-              {budgets
-                .filter((budget) => budget.name !== "Unnamed Budget")
-                .slice(0, 3)
-                .map((budget) => (
-                  <div key={budget.budgetId}>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-slate-700">
-                        {budget.name}
-                      </span>
+              {budgets.filter((budget) => budget.name !== "Unnamed Budget")
+                .length === 0 ? (
+                <div className=" py-6  text-center">
+                  <p className="text-sm font-medium text-slate-600">
+                    Add your first budget
+                  </p>
 
-                      <span className="text-xs text-slate-400">
-                        ₹{budget.spent.toLocaleString("en-IN")} / ₹
-                        {budget.budget.toLocaleString("en-IN")}
-                      </span>
-                    </div>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Start planning your spending and reach your financial goals.
+                  </p>
 
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className="h-full rounded-full bg-emerald-500"
-                        style={{
-                          width: `${Math.min(budget.percentageUsed, 100)}%`,
-                        }}
-                      />
-                    </div>
+                  <button className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-slate-700">
+                    Add Budget
+                  </button>
+                </div>
+              ) : (
+                budgets
+                  .filter((budget) => budget.name !== "Unnamed Budget")
+                  .slice(0, 3)
+                  .map((budget) => (
+                    <div key={budget.budgetId}>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-slate-700">
+                          {budget.name}
+                        </span>
 
-                    <div className="mt-1 flex justify-between text-xs text-slate-400">
-                      <span>{budget.percentageUsed}% used</span>
-                      <span>
-                        ₹{budget.remaining.toLocaleString("en-IN")} remaining
-                      </span>
+                        <span className="text-xs text-slate-400">
+                          ₹{budget.spent.toLocaleString("en-IN")} / ₹
+                          {budget.budget.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-emerald-500"
+                          style={{
+                            width: `${Math.min(budget.percentageUsed, 100)}%`,
+                          }}
+                        />
+                      </div>
+
+                      <div className="mt-1 flex justify-between text-xs text-slate-400">
+                        <span>{budget.percentageUsed}% used</span>
+                        <span>
+                          ₹{budget.remaining.toLocaleString("en-IN")} remaining
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+              )}
             </div>
           </div>
         </div>
 
         {/* Mobile Add Transaction */}
-        <button className="fixed bottom-5 right-5 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-xl font-medium text-white shadow-lg transition hover:bg-emerald-600 sm:hidden">
+        <button
+          type="button"
+          onClick={() => setShowAddTransaction(true)}
+          className="fixed bottom-5 right-5 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-xl font-medium text-white shadow-lg transition hover:bg-emerald-600 sm:hidden"
+        >
           +
         </button>
+
+        <AddTransactionModal
+          isOpen={showAddTransaction}
+          onClose={() => setShowAddTransaction(false)}
+          onTransactionAdded={() => {
+            fetchDashboard();
+          }}
+        />
       </main>
-    </div>
+    </main>
   );
 };
 
