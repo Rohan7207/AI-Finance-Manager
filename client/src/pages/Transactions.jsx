@@ -14,6 +14,9 @@ const Transactions = () => {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [transactionToEdit, setTransactionToEdit] = useState(null);
+  const [transactionToDelete, setTransactionToDelete] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const hasActiveFilters =
     category !== "all" || dateRange !== "all" || sortBy !== "newest";
@@ -35,6 +38,16 @@ const Transactions = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (!successMessage) return;
+
+    const timer = setTimeout(() => {
+      setSuccessMessage("");
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [successMessage]);
 
   const fetchTransactions = async () => {
     try {
@@ -75,6 +88,26 @@ const Transactions = () => {
       setTransactions(normalizedTransactions);
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
+    }
+  };
+
+  const handleDeleteTransaction = async (transaction) => {
+    try {
+      const endpoint =
+        transaction.type === "expense"
+          ? `/expenses/${transaction.id}`
+          : `/incomes/${transaction.id}`;
+
+      await api.delete(endpoint, {
+        withCredentials: true,
+      });
+
+      setActiveMenuId(null);
+      await fetchTransactions();
+
+      setSuccessMessage("Transaction deleted successfully.");
+    } catch (error) {
+      console.error("Failed to delete transaction:", error);
     }
   };
 
@@ -477,11 +510,26 @@ const Transactions = () => {
                                 View details
                               </button>
 
-                              <button className="w-full rounded-lg px-3 py-2 text-left text-xs text-slate-600 hover:bg-slate-50">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setTransactionToEdit(transaction);
+                                  setShowAddTransaction(true);
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full rounded-lg px-3 py-2 text-left text-xs text-slate-600 hover:bg-slate-50"
+                              >
                                 Edit
                               </button>
 
-                              <button className="w-full rounded-lg px-3 py-2 text-left text-xs text-rose-500 hover:bg-rose-50">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setTransactionToDelete(transaction);
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full rounded-lg px-3 py-2 text-left text-xs text-rose-500 hover:bg-rose-50"
+                              >
                                 Delete
                               </button>
                             </div>
@@ -564,11 +612,26 @@ const Transactions = () => {
                               View details
                             </button>
 
-                            <button className="w-full rounded-lg px-3 py-2 text-left text-xs text-slate-600 hover:bg-slate-50">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTransactionToEdit(transaction);
+                                setShowAddTransaction(true);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full rounded-lg px-3 py-2 text-left text-xs text-slate-600 hover:bg-slate-50"
+                            >
                               Edit
                             </button>
 
-                            <button className="w-full rounded-lg px-3 py-2 text-left text-xs text-rose-500 hover:bg-rose-50">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTransactionToDelete(transaction);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full rounded-lg px-3 py-2 text-left text-xs text-rose-500 hover:bg-rose-50"
+                            >
                               Delete
                             </button>
                           </div>
@@ -712,15 +775,82 @@ const Transactions = () => {
           </div>
         )}
 
+        {/* Delete Transaction Modal */}
+        {transactionToDelete && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 p-4"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) {
+                setTransactionToDelete(null);
+              }
+            }}
+          >
+            <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl">
+              <div className="p-5 sm:p-6">
+                <h3 className="text-base font-semibold text-slate-900">
+                  Delete Transaction?
+                </h3>
+
+                <p className="mt-2 text-sm leading-5 text-slate-500">
+                  Are you sure you want to delete{" "}
+                  <span className="font-medium text-slate-700">
+                    {transactionToDelete.description || "this transaction"}
+                  </span>
+                  ? This action cannot be undone.
+                </p>
+
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setTransactionToDelete(null)}
+                    className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await handleDeleteTransaction(transactionToDelete);
+                      setTransactionToDelete(null);
+                    }}
+                    className="rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-600"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Add transaction modal */}
         <AddTransactionModal
           isOpen={showAddTransaction}
-          onClose={() => setShowAddTransaction(false)}
+          onClose={() => {
+            setShowAddTransaction(false);
+            setTransactionToEdit(null);
+          }}
+          transactionToEdit={transactionToEdit}
           onTransactionAdded={() => {
             fetchTransactions();
+
+            setSuccessMessage(
+              transactionToEdit
+                ? "Transaction updated successfully."
+                : "Transaction added successfully.",
+            );
+
+            setTransactionToEdit(null);
           }}
         />
       </main>
+
+      {successMessage && (
+        <div className="fixed right-5 top-20 z-[100] rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-lg">
+          {successMessage}
+        </div>
+      )}
 
       {/* Mobile Add Button */}
       <button
