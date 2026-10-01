@@ -1,12 +1,19 @@
 import React, { useEffect, useRef, useState } from "react";
 import FinanceLogo from "./FinanceLogo";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import api from "../api";
 
 const ProtectedLayout = () => {
+  const { setUser } = useAuth();
+  const navigate = useNavigate();
+
   const [profile, setProfile] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+
   const mobileMenuRef = useRef(null);
+  const accountMenuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -15,6 +22,13 @@ const ProtectedLayout = () => {
         !mobileMenuRef.current.contains(event.target)
       ) {
         setShowMobileMenu(false);
+      }
+
+      if (
+        accountMenuRef.current &&
+        !accountMenuRef.current.contains(event.target)
+      ) {
+        setShowAccountMenu(false);
       }
     };
 
@@ -47,6 +61,26 @@ const ProtectedLayout = () => {
     { label: "Budgets", path: "/budgets" },
     { label: "Insights", path: "/insights" },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await api.post(
+        "/users/logout",
+        {},
+        {
+          withCredentials: true,
+        },
+      );
+
+      setUser(null);
+      setProfile(null);
+      setShowAccountMenu(false);
+
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -116,11 +150,52 @@ const ProtectedLayout = () => {
               )}
             </div>
 
-            {/* User */}
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+            {/* Account */}
+            <div ref={accountMenuRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setShowAccountMenu((prev) => !prev)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
                 {profile?.username?.charAt(0).toUpperCase() || "U"}
-              </div>
+              </button>
+
+              {showAccountMenu && (
+                <div className="absolute right-0 top-11 z-50 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                  {/* Profile summary */}
+                  <div className="border-b border-slate-100 px-4 py-3">
+                    <p className="truncate text-sm font-semibold text-slate-900">
+                      {profile?.username || "User"}
+                    </p>
+
+                    <p className="mt-0.5 truncate text-xs text-slate-400">
+                      {profile?.email || "No email available"}
+                    </p>
+                  </div>
+
+                  {/* Account */}
+                  <div className="p-2">
+                    <NavLink
+                      to="/account"
+                      onClick={() => setShowAccountMenu(false)}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                    >
+                      <span className="text-base">👤</span>
+                      Account
+                    </NavLink>
+
+                    {/* Logout will be connected next */}
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition hover:bg-rose-50 hover:text-rose-600"
+                    >
+                      <span className="text-base">↪</span>
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

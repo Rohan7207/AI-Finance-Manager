@@ -13,6 +13,7 @@ import Landing from "./pages/Landing";
 import Transactions from "./pages/Transactions";
 import Budgets from "./pages/Budgets";
 import Insights from "./pages/Insights";
+import Account from "./pages/Account";
 
 const App = () => {
   return (
@@ -51,6 +52,7 @@ const App = () => {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/budgets" element={<Budgets />} />
             <Route path="/insights" element={<Insights />} />
+            <Route path="/account" element={<Account />} />
           </Route>
         </Routes>
       </BrowserRouter>

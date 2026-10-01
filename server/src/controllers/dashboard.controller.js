@@ -2,7 +2,11 @@ const dashboardService = require("../services/dashboard.service");
 
 async function getDashboardData(req, res) {
   try {
-    const dashboardData = await dashboardService.getDashboardData(req.user._id);
+    const period = req.query.period || "month";
+    const dashboardData = await dashboardService.getDashboardData(
+      req.user._id,
+      period,
+    );
 
     return res.status(200).json({
       message: "Data retrieved successfully",

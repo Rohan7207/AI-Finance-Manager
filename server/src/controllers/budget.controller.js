@@ -17,19 +17,27 @@ async function createBudget(req, res) {
 
 async function getBudgets(req, res) {
   try {
-    const budgets = await budgetService.getBudgets(req.user._id);
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(
+      Math.max(parseInt(req.query.limit, 10) || 12, 1),
+      50,
+    );
 
-    if (budgets.length === 0) {
+    const result = await budgetService.getBudgets(req.user._id, page, limit);
+
+    if (result.budgets.length === 0) {
       return res.status(200).json({
         message:
           "No budgets found. Add your first budget to start tracking your spending.",
         budgets: [],
+        pagination: result.pagination,
       });
     }
 
     return res.status(200).json({
       message: "Budgets retrieved successfully",
-      budgets,
+      budgets: result.budgets,
+      pagination: result.pagination,
     });
   } catch (err) {
     console.error(err);

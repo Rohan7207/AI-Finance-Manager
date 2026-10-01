@@ -29,10 +29,28 @@ async function createBudget(budgetData, userId) {
   return mapBudgetWithName(budget);
 }
 
-async function getBudgets(userId) {
-  const budgets = await budgetModel.find({ user: userId });
+async function getBudgets(userId, page = 1, limit = 12) {
+  const skip = (page - 1) * limit;
 
-  return budgets.map(mapBudgetWithName);
+  const [budgets, totalBudgets] = await Promise.all([
+    budgetModel
+      .find({ user: userId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+
+    budgetModel.countDocuments({ user: userId }),
+  ]);
+
+  return {
+    budgets: budgets.map(mapBudgetWithName),
+    pagination: {
+      page,
+      limit,
+      total: totalBudgets,
+      totalPages: Math.ceil(totalBudgets / limit),
+    },
+  };
 }
 
 async function getBudgetById(budgetId, userId) {

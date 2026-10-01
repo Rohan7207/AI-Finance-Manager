@@ -5,7 +5,7 @@ const incomeService = require("../services/income.service");
 const expenseService = require("../services/expense.service");
 const budgetService = require("../services/budget.service");
 
-async function getDashboardData(userId) {
+async function getDashboardData(userId, period = "month") {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -15,6 +15,23 @@ async function getDashboardData(userId) {
     now.getMonth() - 1,
     1,
   );
+
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const startOfNextYear = new Date(now.getFullYear() + 1, 0, 1);
+
+  let periodStart = startOfMonth;
+  let periodEnd = startOfNextMonth;
+
+  if (period === "lastMonth") {
+    periodStart = startOfPreviousMonth;
+    periodEnd = startOfMonth;
+  } else if (period === "year") {
+    periodStart = startOfYear;
+    periodEnd = startOfNextYear;
+  } else if (period === "all") {
+    periodStart = null;
+    periodEnd = null;
+  }
 
   const incomeSum = await incomeModel.aggregate([
     {
@@ -154,6 +171,61 @@ async function getDashboardData(userId) {
     },
   ]);
 
+  // ...(periodStart && periodEnd bcz for all time it becomes null and it is {} so mongodb will match with all transactions to that user
+  const selectedIncomeSum = await incomeModel.aggregate([
+    {
+      $match: {
+        user: userId,
+        ...(periodStart && periodEnd
+          ? {
+              incomeDate: {
+                $gte: periodStart,
+                $lt: periodEnd,
+              },
+            }
+          : {}),
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        selectedIncome: { $sum: "$amount" },
+      },
+    },
+  ]);
+
+  const selectedExpenseSum = await expenseModel.aggregate([
+    {
+      $match: {
+        user: userId,
+        ...(periodStart && periodEnd
+          ? {
+              expenseDate: {
+                $gte: periodStart,
+                $lt: periodEnd,
+              },
+            }
+          : {}),
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        selectedExpense: { $sum: "$amount" },
+      },
+    },
+  ]);
+
+  const selectedIncome = selectedIncomeSum[0]?.selectedIncome || 0;
+  const selectedExpense = selectedExpenseSum[0]?.selectedExpense || 0;
+
+  const selectedBalance = selectedIncome - selectedExpense;
+
+  const selectedSavingsRate =
+    selectedIncome > 0
+      ? Number(((selectedBalance / selectedIncome) * 100).toFixed(2))
+      : 0;
+
   const totalIncome = incomeSum[0]?.totalIncome || 0;
   const totalExpense = expenseSum[0]?.totalExpense || 0;
 
@@ -208,6 +280,14 @@ async function getDashboardData(userId) {
     totalIncome,
     totalExpense,
     balance,
+
+    selectedPeriod: {
+      period,
+      income: selectedIncome,
+      expense: selectedExpense,
+      balance: selectedBalance,
+      savingsRate: selectedSavingsRate,
+    },
 
     changes: {
       incomeChange,
@@ -398,13 +478,9 @@ async function getFinancialContext(userId) {
   const monthlyFinancialTrend = await getMonthlyFinancialData(userId);
   const activeBudgets = await budgetService.getActiveBudgets(userId);
 
-  const monthlyIncomeSum = dashboardData.monthlyIncomeSum;
-  const monthlyExpenseSum = dashboardData.monthlyExpenseSum;
-
-  const monthlyIncome = monthlyIncomeSum[0]?.monthlyIncome || 0;
-  const monthlyExpense = monthlyExpenseSum[0]?.monthlyExpense || 0;
-
-  const monthlySavings = monthlyIncome - monthlyExpense;
+  const monthlyIncome = dashboardData.monthly.income;
+  const monthlyExpense = dashboardData.monthly.expense;
+  const monthlySavings = dashboardData.monthly.savings;
 
   const budgetAnalytics = await Promise.all(
     activeBudgets.map((budget) =>

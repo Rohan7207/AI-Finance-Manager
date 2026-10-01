@@ -22,6 +22,7 @@ const Dashboard = () => {
   const { profile } = useOutletContext();
 
   const [chartPeriod, setChartPeriod] = useState("week");
+  const [summaryPeriod, setSummaryPeriod] = useState("month");
   const [chartData, setChartData] = useState([]);
   const [chartLoading, setChartLoading] = useState(false);
   const [chartError, setChartError] = useState("");
@@ -33,6 +34,9 @@ const Dashboard = () => {
       setLoading(true);
 
       const response = await api.get("/dashboard", {
+        params: {
+          period: summaryPeriod,
+        },
         withCredentials: true,
       });
 
@@ -47,7 +51,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboard();
-  }, []);
+  }, [summaryPeriod]);
 
   useEffect(() => {
     const fetchFinancialTrend = async () => {
@@ -75,58 +79,49 @@ const Dashboard = () => {
     fetchFinancialTrend();
   }, [chartPeriod]);
 
+  const summaryPeriodLabel = {
+    month: "This Month",
+    lastMonth: "Last Month",
+    year: "This Year",
+    all: "All Time",
+  };
+
+  const selectedPeriod = dashboardData?.selectedPeriod;
+
   const summaryCards = [
     {
-      title: "Total Balance",
-      value: dashboardData
-        ? `₹${dashboardData.balance.toLocaleString("en-IN")}`
+      title: "Income",
+      value: selectedPeriod
+        ? `₹${selectedPeriod.income.toLocaleString("en-IN")}`
         : "-",
-      change: dashboardData
-        ? `${dashboardData.changes.balanceChange > 0 ? "+" : ""}${dashboardData.changes.balanceChange}%`
-        : "-",
-      subtitle: "vs last month",
-      icon: "₹",
-      iconStyle: "bg-emerald-50 text-emerald-600",
-      changeStyle: "text-emerald-600",
-    },
-    {
-      title: "Total Income",
-      value: dashboardData
-        ? `₹${dashboardData.totalIncome.toLocaleString("en-IN")}`
-        : "-",
-      change: dashboardData
-        ? `${dashboardData.changes.incomeChange > 0 ? "+" : ""}${dashboardData.changes.incomeChange}%`
-        : "-",
-      subtitle: "vs last month",
+      subtitle: summaryPeriodLabel[summaryPeriod],
       icon: "↗",
       iconStyle: "bg-blue-50 text-blue-600",
-      changeStyle: "text-blue-600",
     },
     {
-      title: "Total Expenses",
-      value: dashboardData
-        ? `₹${dashboardData.totalExpense.toLocaleString("en-IN")}`
+      title: "Expenses",
+      value: selectedPeriod
+        ? `₹${selectedPeriod.expense.toLocaleString("en-IN")}`
         : "-",
-      change: dashboardData
-        ? `${dashboardData.changes.expenseChange > 0 ? "+" : ""}${dashboardData.changes.expenseChange}%`
-        : "-",
-      subtitle: "vs last month",
+      subtitle: summaryPeriodLabel[summaryPeriod],
       icon: "↘",
       iconStyle: "bg-rose-50 text-rose-600",
-      changeStyle: "text-rose-600",
     },
     {
-      title: "Savings",
-      value: dashboardData
-        ? `₹${dashboardData.monthly.savings.toLocaleString("en-IN")}`
+      title: "Net Balance",
+      value: selectedPeriod
+        ? `₹${selectedPeriod.balance.toLocaleString("en-IN")}`
         : "-",
-      change: dashboardData
-        ? `${dashboardData.changes.savingsChange > 0 ? "+" : ""}${dashboardData.changes.savingsChange}%`
-        : "-",
-      subtitle: "this month",
+      subtitle: summaryPeriodLabel[summaryPeriod],
+      icon: "₹",
+      iconStyle: "bg-emerald-50 text-emerald-600",
+    },
+    {
+      title: "Savings Rate",
+      value: selectedPeriod ? `${selectedPeriod.savingsRate}%` : "-",
+      subtitle: summaryPeriodLabel[summaryPeriod],
       icon: "◈",
       iconStyle: "bg-violet-50 text-violet-600",
-      changeStyle: "text-violet-600",
     },
   ];
 
@@ -184,39 +179,67 @@ const Dashboard = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {summaryCards.map((card) => (
-            <div
-              key={card.title}
-              className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-medium text-slate-500 sm:text-sm">
-                  {card.title}
-                </p>
-
-                <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold ${card.iconStyle}`}
-                >
-                  {card.icon}
-                </div>
-              </div>
-
-              <div className="mt-3">
-                <h2 className="text-lg font-bold tracking-tight sm:text-xl">
-                  {card.value}
-                </h2>
-
-                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-                  <span className={`font-semibold ${card.changeStyle}`}>
-                    {card.change}
-                  </span>
-
-                  <span className="text-slate-400">{card.subtitle}</span>
-                </div>
-              </div>
+        <div className="mt-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">
+                Financial Overview
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-400">
+                View your finances for a selected period
+              </p>
             </div>
-          ))}
+
+            <select
+              value={summaryPeriod}
+              onChange={(e) => setSummaryPeriod(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
+            >
+              <option value="month">This Month</option>
+              <option value="lastMonth">Last Month</option>
+              <option value="year">This Year</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {summaryCards.map((card) => (
+              <div
+                key={card.title}
+                className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-slate-500 sm:text-sm">
+                    {card.title}
+                  </p>
+
+                  <div
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold ${card.iconStyle}`}
+                  >
+                    {card.icon}
+                  </div>
+                </div>
+
+                {loading ? (
+                  <>
+                    <div className="mt-3 h-6 w-24 animate-pulse rounded-md bg-slate-100" />
+
+                    <div className="mt-3 h-3 w-16 animate-pulse rounded bg-slate-100" />
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-lg font-bold tracking-tight sm:text-xl">
+                      {card.value}
+                    </h2>
+
+                    <div className="mt-2 text-xs">
+                      <span className="text-slate-400">{card.subtitle}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Chart + AI Insight */}
